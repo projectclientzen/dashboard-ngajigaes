@@ -73,14 +73,9 @@ export const MOCK_KPIS: Kpi[] = [
   },
 ]
 
-// Minggu ini
-const weekStart = new Date()
-weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
-const weekEnd = new Date(weekStart)
-weekEnd.setDate(weekStart.getDate() + 6)
-
-const ps = weekStart.toISOString().split('T')[0]
-const pe = weekEnd.toISOString().split('T')[0]
+// Minggu tetap — fixed agar tidak ada hydration mismatch
+const ps = '2026-06-22'
+const pe = '2026-06-28'
 
 export const MOCK_KPI_RESULTS: KpiResult[] = [
   {

@@ -4,9 +4,9 @@
 // ============================================================
 
 import type {
-  RoleName,
+  Role,
   TaskStatus,
-  TaskPriority,
+  Priority,
   ContentFormat,
   ContentObjective,
   ContentStatus,
@@ -20,14 +20,14 @@ import type {
 
 // ─── ROLES ───────────────────────────────────────────────────
 
-export const ROLE_NAMES: Record<RoleName, string> = {
+export const ROLE_NAMES: Record<Role, string> = {
   leader: 'Leader',
   feed_socmed: 'Feed Socmed',
   reels_ads: 'Reels & Ads',
   curator: 'Curator',
 }
 
-export const ROLES: RoleName[] = ['leader', 'feed_socmed', 'reels_ads', 'curator']
+export const ROLES: Role[] = ['leader', 'feed_socmed', 'reels_ads', 'curator']
 
 // ─── TASK STATUS ─────────────────────────────────────────────
 
@@ -67,14 +67,14 @@ export const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
 
 // ─── TASK PRIORITY ───────────────────────────────────────────
 
-export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
+export const TASK_PRIORITY_LABELS: Record<Priority, string> = {
   low: 'Low',
   medium: 'Medium',
   high: 'High',
   urgent: 'Urgent',
 }
 
-export const TASK_PRIORITY_COLORS: Record<TaskPriority, string> = {
+export const TASK_PRIORITY_COLORS: Record<Priority, string> = {
   low: 'bg-slate-100 text-slate-600',
   medium: 'bg-blue-100 text-blue-700',
   high: 'bg-orange-100 text-orange-700',

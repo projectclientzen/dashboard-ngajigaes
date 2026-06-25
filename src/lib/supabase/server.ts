@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
 export function createClient() {
@@ -27,12 +28,10 @@ export function createClient() {
 }
 
 /**
- * Admin client — pakai service role key, HANYA di server-side
- * Untuk flow buat user (BE Spec Bagian 2)
+ * Admin client — service role key, HANYA di server-side
  */
 export function createAdminClient() {
-  const { createClient } = require('@supabase/supabase-js')
-  return createClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }

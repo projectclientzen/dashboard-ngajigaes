@@ -98,30 +98,34 @@ export const MOCK_CONTENTS: Content[] = [
   },
 ]
 
-// Account insight 7 hari terakhir
-const today = new Date()
-export const MOCK_ACCOUNT_INSIGHTS: AccountInsight[] = Array.from({ length: 7 }, (_, i) => {
-  const date = new Date(today)
-  date.setDate(today.getDate() - (6 - i))
-  const base = 12500 + i * 50 + Math.floor(Math.random() * 100)
-  return {
-    id: `insight-acc-${i + 1}`,
-    insight_date: date.toISOString().split('T')[0],
-    followers: base,
-    follower_growth: i === 0 ? null : 50 + Math.floor(Math.random() * 80),
-    reach: 3000 + Math.floor(Math.random() * 1500),
-    impressions: 5000 + Math.floor(Math.random() * 2000),
-    profile_visits: 200 + Math.floor(Math.random() * 150),
-    link_clicks: 40 + Math.floor(Math.random() * 60),
-    dm_count: 15 + Math.floor(Math.random() * 20),
-    total_likes: 180 + Math.floor(Math.random() * 120),
-    total_comments: 25 + Math.floor(Math.random() * 30),
-    total_saves: 60 + Math.floor(Math.random() * 50),
-    total_shares: 30 + Math.floor(Math.random() * 40),
-    engagement_rate: 3.2 + Math.random() * 2,
-    notes: null,
-  }
-})
+// Account insight 7 hari terakhir — fixed values (no Math.random → no hydration mismatch)
+const INSIGHT_DATES = ['2026-06-19','2026-06-20','2026-06-21','2026-06-22','2026-06-23','2026-06-24','2026-06-25']
+const INSIGHT_DATA = [
+  { followers: 12533, growth: null,  reach: 3420, impressions: 5210, visits: 218, clicks: 44, dm: 16, likes: 192, comments: 27, saves: 65, shares: 33, eng: 4.1 },
+  { followers: 12598, growth: 65,    reach: 4150, impressions: 6380, visits: 295, clicks: 72, dm: 22, likes: 248, comments: 35, saves: 88, shares: 51, eng: 5.2 },
+  { followers: 12641, growth: 43,    reach: 3080, impressions: 5050, visits: 201, clicks: 41, dm: 15, likes: 183, comments: 24, saves: 61, shares: 31, eng: 3.8 },
+  { followers: 12719, growth: 78,    reach: 4620, impressions: 7100, visits: 318, clicks: 89, dm: 28, likes: 295, comments: 42, saves: 102, shares: 64, eng: 5.8 },
+  { followers: 12784, growth: 65,    reach: 3950, impressions: 6020, visits: 274, clicks: 65, dm: 20, likes: 235, comments: 31, saves: 79, shares: 45, eng: 4.9 },
+  { followers: 12821, growth: 37,    reach: 3210, impressions: 5180, visits: 223, clicks: 48, dm: 17, likes: 198, comments: 28, saves: 67, shares: 35, eng: 4.1 },
+  { followers: 12848, growth: 27,    reach: 2980, impressions: 4890, visits: 208, clicks: 43, dm: 15, likes: 185, comments: 25, saves: 62, shares: 32, eng: 3.9 },
+]
+export const MOCK_ACCOUNT_INSIGHTS: AccountInsight[] = INSIGHT_DATA.map((d, i) => ({
+  id: `insight-acc-${i + 1}`,
+  insight_date: INSIGHT_DATES[i],
+  followers: d.followers,
+  follower_growth: d.growth,
+  reach: d.reach,
+  impressions: d.impressions,
+  profile_visits: d.visits,
+  link_clicks: d.clicks,
+  dm_count: d.dm,
+  total_likes: d.likes,
+  total_comments: d.comments,
+  total_saves: d.saves,
+  total_shares: d.shares,
+  engagement_rate: d.eng,
+  notes: null,
+}))
 
 export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
   {

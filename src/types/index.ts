@@ -327,6 +327,7 @@ export interface ScoreSettings {
 // Dipakai hanya di lib/supabase/ dan server actions.
 // FE tidak perlu import dari sini.
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace DB {
   export interface UsersRow {
     id: string

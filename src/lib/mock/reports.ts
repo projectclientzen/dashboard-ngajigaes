@@ -1,7 +1,7 @@
 import type { DailyReport, WeeklyReview, ActionPlan } from '@/types'
 
-const today = new Date().toISOString().split('T')[0]
-const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+const today = '2026-06-26'
+const yesterday = '2026-06-25'
 
 export const MOCK_DAILY_REPORTS: DailyReport[] = [
   {
@@ -50,17 +50,11 @@ export const MOCK_MISSING_REPORTS: { user_id: string; user_name: string }[] = [
   { user_id: 'user-curator-01', user_name: 'Sari Dewi' },
 ]
 
-// Weekly Review
-const weekStart = new Date()
-weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1)
-const weekEnd = new Date(weekStart)
-weekEnd.setDate(weekStart.getDate() + 6)
-
 export const MOCK_WEEKLY_REVIEWS: WeeklyReview[] = [
   {
     id: 'review-01',
-    period_start: weekStart.toISOString().split('T')[0],
-    period_end: weekEnd.toISOString().split('T')[0],
+    period_start: '2026-06-22',
+    period_end: '2026-06-28',
     revenue_summary: {
       total_gross: 5730000,
       total_net: 5530000,
