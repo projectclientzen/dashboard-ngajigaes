@@ -1,18 +1,11 @@
 'use client'
 
-import { useMock } from '@/contexts/MockContext'
-import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useApp } from '@/contexts/AppContext'
 
 export default function SettingsPage() {
-  const { currentRole } = useMock()
-  const router = useRouter()
+  const { isLeader } = useApp()
 
-  useEffect(() => {
-    if (currentRole !== 'leader') router.replace('/dashboard')
-  }, [currentRole, router])
-
-  if (currentRole !== 'leader') {
+  if (!isLeader) {
     return (
       <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 flex flex-col items-center text-center gap-3">
         <div className="text-[16px] font-bold text-[#2B2A24]">Akses Terbatas</div>
@@ -31,8 +24,7 @@ export default function SettingsPage() {
       </div>
       <div className="text-[16px] font-bold text-[#2B2A24]">Settings</div>
       <div className="text-[13px] text-[#9A9279] max-w-[420px] leading-relaxed">
-        User management, role management, product management, dan pengaturan bobot productivity score.
-        Hanya untuk Leader. Siap dibangun di iterasi berikutnya.
+        User management, role management, product management, dan pengaturan bobot productivity score. Siap dibangun di iterasi berikutnya.
       </div>
     </div>
   )

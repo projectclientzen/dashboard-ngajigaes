@@ -1,5 +1,3 @@
-'use client'
-
 export default function WeeklyReviewPage() {
   return (
     <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 flex flex-col items-center text-center gap-3">
@@ -11,8 +9,7 @@ export default function WeeklyReviewPage() {
       </div>
       <div className="text-[16px] font-bold text-[#2B2A24]">Weekly Review</div>
       <div className="text-[13px] text-[#9A9279] max-w-[420px] leading-relaxed">
-        Summary periode otomatis, input main problem / leader notes / decision, action plan list,
-        dan tombol convert action plan jadi task. Arsip review tersimpan. Siap dibangun di iterasi berikutnya.
+        Summary periode otomatis, input main problem / notes, action plan list, dan convert ke task. Siap dibangun di iterasi berikutnya.
       </div>
     </div>
   )
