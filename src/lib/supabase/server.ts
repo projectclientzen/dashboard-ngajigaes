@@ -1,11 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
+import type { Database } from '@/types/database.types'
 
 export function createClient() {
   const cookieStore = cookies()
 
-  return createServerClient(
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -19,7 +20,7 @@ export function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Called from Server Component, bisa diabaikan
+            // Called from Server Component — bisa diabaikan
           }
         },
       },
@@ -28,10 +29,11 @@ export function createClient() {
 }
 
 /**
- * Admin client — service role key, HANYA di server-side
+ * Admin client pakai service role key — HANYA di server-side
+ * Untuk: buat user baru (BE Spec Bagian 2), bypass RLS
  */
 export function createAdminClient() {
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
