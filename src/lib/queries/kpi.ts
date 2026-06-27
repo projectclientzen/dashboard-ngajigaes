@@ -98,6 +98,22 @@ export function useKpiActual(kpiId: string, userId: string, start: string, end: 
   })
 }
 
+export function useCreateKpi() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (kpi: {
+      name: string; description?: string; category: string
+      target_value: number; unit: string; weight: number
+      period: string; calculation_method: string
+      role_id?: string; user_id?: string
+    }) => {
+      const { error } = await db().from('kpis').insert({ ...kpi, is_active: true, max_score_cap: 100 })
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpis'] }),
+  })
+}
+
 export function useUpsertKpiResult() {
   const qc = useQueryClient()
   return useMutation({
