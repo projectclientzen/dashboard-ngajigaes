@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import { useKpis, useAllKpiResults, useCreateKpi, useUpsertKpiResult } from '@/lib/queries/kpi'
+import { useKpis, useAllKpiResults, useCreateKpi, useUpdateKpi, useUpsertKpiResult } from '@/lib/queries/kpi'
 import { useAllUsers } from '@/lib/queries/daily-reports'
 import { getInitials, formatNumber } from '@/lib/utils'
 import type { KpiPeriod, KpiCalculationMethod } from '@/types'
@@ -31,10 +31,12 @@ export default function KpiPage() {
   const kpisQ     = useKpis()
   const usersQ    = useAllUsers()
   const createKpi = useCreateKpi()
+  const updateKpi = useUpdateKpi()
   const upsertResult = useUpsertKpiResult()
 
   const [showCreateKpi, setShowCreateKpi] = useState(false)
   const [showInputResult, setShowInputResult] = useState(false)
+  const [editingKpiId, setEditingKpiId] = useState<string | null>(null)
   const [tab, setTab] = useState<'results' | 'definitions'>('results')
 
   const [kpiForm, setKpiForm] = useState({
@@ -68,6 +70,48 @@ export default function KpiPage() {
         ...(kpiForm.user_id && { user_id: kpiForm.user_id }),
       })
       setShowCreateKpi(false)
+      setKpiForm({ name: '', description: '', category: 'Produktivitas', target_value: '', unit: '', weight: '10', period: 'monthly', calculation_method: 'manual', user_id: '' })
+    } catch (e) { setKpiErr((e as Error).message) }
+  }
+
+  function openEditKpi(kpi: typeof kpis[0]) {
+    setKpiForm({
+      name: kpi.name,
+      description: kpi.description ?? '',
+      category: kpi.category,
+      target_value: String(kpi.target_value),
+      unit: kpi.unit,
+      weight: String(kpi.weight),
+      period: kpi.period,
+      calculation_method: kpi.calculation_method,
+      user_id: kpi.user_id ?? '',
+    })
+    setKpiErr('')
+    setEditingKpiId(kpi.id)
+    setShowCreateKpi(true)
+  }
+
+  async function handleUpdateKpi() {
+    setKpiErr('')
+    if (!kpiForm.name || !kpiForm.target_value || !kpiForm.unit) {
+      setKpiErr('Nama, target, dan unit wajib diisi.'); return
+    }
+    if (!editingKpiId) return
+    try {
+      await updateKpi.mutateAsync({
+        id: editingKpiId,
+        name: kpiForm.name,
+        description: kpiForm.description || undefined,
+        category: kpiForm.category,
+        target_value: parseFloat(kpiForm.target_value),
+        unit: kpiForm.unit,
+        weight: parseFloat(kpiForm.weight) || 10,
+        period: kpiForm.period,
+        calculation_method: kpiForm.calculation_method,
+        ...(kpiForm.user_id && { user_id: kpiForm.user_id }),
+      })
+      setShowCreateKpi(false)
+      setEditingKpiId(null)
       setKpiForm({ name: '', description: '', category: 'Produktivitas', target_value: '', unit: '', weight: '10', period: 'monthly', calculation_method: 'manual', user_id: '' })
     } catch (e) { setKpiErr((e as Error).message) }
   }
@@ -209,16 +253,21 @@ export default function KpiPage() {
               </thead>
               <tbody>
                 {kpis.map(k => (
-                  <tr key={k.id} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]">
+                  <tr key={k.id}
+                    className="border-t border-[#F1ECDC] hover:bg-[#FBF6E9] cursor-pointer group"
+                    onClick={() => openEditKpi(k)}>
                     <td className="p-[11px_16px] font-semibold text-[#2B2A24]">{k.name}</td>
                     <td className="p-[11px_16px] text-[#5A574C]">{k.category}</td>
                     <td className="p-[11px_16px] text-[#5A574C]">{formatNumber(k.target_value)}</td>
                     <td className="p-[11px_16px] text-[#5A574C]">{k.unit}</td>
                     <td className="p-[11px_16px] font-semibold text-[#2B2A24]">{k.weight}%</td>
                     <td className="p-[11px_16px]">
-                      <span className="text-[11px] bg-[#EFEAD9] text-[#5A574C] rounded-full px-[9px] py-[3px] font-semibold">
-                        {PERIOD_LABEL[k.period] ?? k.period}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] bg-[#EFEAD9] text-[#5A574C] rounded-full px-[9px] py-[3px] font-semibold">
+                          {PERIOD_LABEL[k.period] ?? k.period}
+                        </span>
+                        <span className="text-[10px] text-[#4F7CAC] opacity-0 group-hover:opacity-100 transition-opacity">Edit</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -231,11 +280,11 @@ export default function KpiPage() {
       {/* Create KPI Modal */}
       {showCreateKpi && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setShowCreateKpi(false)}/>
+          <div className="absolute inset-0 bg-black/30" onClick={() => { setShowCreateKpi(false); setEditingKpiId(null) }}/>
           <div className="relative bg-white rounded-xl border border-[#EBE5D4] shadow-xl w-full max-w-md p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h3 className="text-[16px] font-bold text-[#2B2A24]">Buat KPI Baru</h3>
-              <button onClick={() => setShowCreateKpi(false)} className="text-[#9A9279] text-xl border-none bg-none cursor-pointer">×</button>
+              <h3 className="text-[16px] font-bold text-[#2B2A24]">{editingKpiId ? 'Edit KPI' : 'Buat KPI Baru'}</h3>
+              <button onClick={() => { setShowCreateKpi(false); setEditingKpiId(null) }} className="text-[#9A9279] text-xl border-none bg-none cursor-pointer">×</button>
             </div>
             <div className="flex flex-col gap-[6px]">
               <label className="text-[12px] font-semibold text-[#5A574C]">Nama KPI *</label>
@@ -294,11 +343,13 @@ export default function KpiPage() {
             </div>
             {kpiErr && <div className="text-[12px] text-[#B4452F] bg-[#F7E7E2] border border-[#EAC8BF] rounded-md px-3 py-2">{kpiErr}</div>}
             <div className="flex gap-2 pt-1">
-              <button onClick={() => setShowCreateKpi(false)}
+              <button onClick={() => { setShowCreateKpi(false); setEditingKpiId(null) }}
                 className="flex-1 bg-[#EFEAD9] text-[#5A574C] border-none rounded-md py-[9px] text-[13px] font-semibold cursor-pointer">Batal</button>
-              <button onClick={handleCreateKpi} disabled={createKpi.isPending}
+              <button
+                onClick={editingKpiId ? handleUpdateKpi : handleCreateKpi}
+                disabled={createKpi.isPending || updateKpi.isPending}
                 className="flex-1 bg-[#5E7A5C] text-white border-none rounded-md py-[9px] text-[13px] font-semibold cursor-pointer disabled:opacity-50">
-                {createKpi.isPending ? 'Menyimpan...' : 'Buat KPI'}
+                {(createKpi.isPending || updateKpi.isPending) ? 'Menyimpan...' : editingKpiId ? 'Simpan Perubahan' : 'Buat KPI'}
               </button>
             </div>
           </div>

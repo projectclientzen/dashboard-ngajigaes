@@ -114,6 +114,21 @@ export function useCreateKpi() {
   })
 }
 
+export function useUpdateKpi() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...kpi }: {
+      id: string; name: string; description?: string; category: string
+      target_value: number; unit: string; weight: number
+      period: string; calculation_method: string; user_id?: string
+    }) => {
+      const { error } = await db().from('kpis').update(kpi).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpis'] }),
+  })
+}
+
 export function useUpsertKpiResult() {
   const qc = useQueryClient()
   return useMutation({
