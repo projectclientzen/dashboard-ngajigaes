@@ -1,0 +1,35 @@
+{
+  "name": "NgajiGaes Dashboard",
+  "short_name": "NgajiGaes",
+  "description": "Dashboard performa tim NgajiGaes",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#F4EFDF",
+  "theme_color": "#7E997B",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "id",
+  "categories": ["productivity", "business"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ]
+}
