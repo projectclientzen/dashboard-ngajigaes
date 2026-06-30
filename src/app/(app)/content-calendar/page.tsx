@@ -152,12 +152,10 @@ export default function ContentCalendarPage() {
             )
           })}
         </div>
-        {(isLeader) && (
-          <button onClick={openNew}
-            className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors">
-            + Buat Konten
-          </button>
-        )}
+        <button onClick={openNew}
+          className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors">
+          + Buat Konten
+        </button>
       </div>
 
       {/* Tabel */}

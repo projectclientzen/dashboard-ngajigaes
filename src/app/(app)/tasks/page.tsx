@@ -25,7 +25,7 @@ const PRIO: Record<string, { c: string; bg: string; t: string }> = {
   urgent: { c: '#B4452F', bg: '#F7E7E2', t: 'Urgent' },
 }
 
-const CATEGORIES = ['Konten','Desain','Copywriting','Admin','Riset','Ads','Lainnya']
+const CATEGORIES = ['Konten','Desain','Copywriting','Admin','Riset','Ads','Ebook','Lainnya']
 
 const AVATAR_COLORS = ['#5E7A5C','#4F7CAC','#C2795A','#8A6BA8','#3F8C8C','#B07A3C']
 function avatarColor(name: string) {
@@ -316,15 +316,16 @@ export default function TasksPage() {
                 <div className="text-[12px] text-[#5A574C]">{selected.revision_notes}</div>
               </div>
             )}
-            <div className="flex gap-2">
-              <button onClick={() => updateStatus.mutate({ id: selected.id, status: 'in_progress' })}
-                className="flex-1 bg-white border border-[#D9E0D4] text-[#4F7CAC] rounded-md py-[9px] text-[12px] font-semibold cursor-pointer">
-                In Progress
-              </button>
-              <button onClick={() => { updateStatus.mutate({ id: selected.id, status: 'done' }); setSelectedId(null) }}
-                className="flex-1 bg-[#5E7A5C] border-none text-white rounded-md py-[9px] text-[12px] font-semibold cursor-pointer">
-                Tandai Selesai
-              </button>
+            <div className="flex flex-col gap-[6px]">
+              <label className="text-[11px] font-semibold text-[#5A574C]">Ubah Status</label>
+              <select
+                value={selected.status}
+                onChange={e => updateStatus.mutate({ id: selected.id, status: e.target.value as TaskStatus })}
+                className="border border-[#E3DCC8] rounded-md px-3 py-[9px] text-[13px] bg-[#FCFAF2] text-[#2B2A24] focus:outline-none focus:border-[#7E997B] transition-colors w-full cursor-pointer">
+                {KANBAN_COLS.map(col => (
+                  <option key={col.id} value={col.id}>{col.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <div className="text-[12px] font-semibold text-[#5A574C] mb-[10px]">Komentar</div>

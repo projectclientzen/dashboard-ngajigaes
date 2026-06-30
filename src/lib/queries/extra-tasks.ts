@@ -5,6 +5,10 @@ export interface ExtraTask {
   id: string
   title: string
   note: string | null
+  description: string | null
+  leader_url: string | null
+  reply: string | null
+  reply_url: string | null
   assignee_id: string
   assignee_name: string
   created_by: string
@@ -34,6 +38,10 @@ export function useExtraTasks(assigneeId?: string) {
         id: r.id as string,
         title: r.title as string,
         note: r.note as string | null,
+        description: r.description as string | null,
+        leader_url: r.leader_url as string | null,
+        reply: r.reply as string | null,
+        reply_url: r.reply_url as string | null,
         assignee_id: r.assignee_id as string,
         assignee_name: r.assignee_name as string,
         created_by: r.created_by as string,
@@ -49,7 +57,14 @@ export function useExtraTasks(assigneeId?: string) {
 export function useCreateExtraTask() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: { title: string; note?: string; assignee_id: string; created_by: string }) => {
+    mutationFn: async (payload: {
+      title: string
+      note?: string
+      description?: string
+      leader_url?: string
+      assignee_id: string
+      created_by: string
+    }) => {
       const { error } = await db().from('extra_tasks').insert(payload)
       if (error) throw error
     },
@@ -62,6 +77,17 @@ export function useUpdateExtraTaskStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ExtraTask['status'] }) => {
       const { error } = await db().from('extra_tasks').update({ status, updated_at: new Date().toISOString() }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['extra-tasks'] }),
+  })
+}
+
+export function useReplyExtraTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, reply, reply_url }: { id: string; reply?: string; reply_url?: string }) => {
+      const { error } = await db().from('extra_tasks').update({ reply, reply_url, updated_at: new Date().toISOString() }).eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['extra-tasks'] }),
