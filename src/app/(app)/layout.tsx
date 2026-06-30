@@ -4,6 +4,7 @@ import { AppProvider } from '@/contexts/AppContext'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { BottomNav } from '@/components/layout/BottomNav'
+import { PushNotificationManager } from '@/components/PushNotificationManager'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +24,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </div>
       {/* Bottom nav: mobile only */}
       <BottomNav />
+      {/* Push notification permission manager */}
+      <PushNotificationManager />
     </AppProvider>
   )
 }

@@ -8,6 +8,7 @@ import { useApp } from '@/contexts/AppContext'
 import { createClient } from '@/lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { useHasFilledToday } from '@/lib/hooks/useDailyStatus'
 
 // ─── Icons ─────────────────────────────────────────────────
 const IC = {
@@ -145,8 +146,10 @@ export function BottomNav() {
   const pathname = usePathname()
   const router   = useRouter()
   const qc       = useQueryClient()
-  const { isLeader } = useApp()
+  const { isLeader, userId } = useApp()
   const [moreOpen, setMoreOpen] = useState(false)
+  const filledQ = useHasFilledToday(userId)
+  const showBadge = filledQ.data === false // belum isi hari ini
 
   const MORE_HREFS = (isLeader ? LEADER_MORE : MEMBER_MORE).map(m => m.href)
   const moreActive = MORE_HREFS.includes(pathname) || moreOpen
@@ -158,15 +161,25 @@ export function BottomNav() {
     router.push('/login')
   }
 
+  // Icon daily dengan badge merah jika belum isi
+  const dailyIcon = (
+    <span className="relative inline-flex">
+      {IC.daily}
+      {showBadge && (
+        <span className="absolute -top-[2px] -right-[2px] w-[8px] h-[8px] rounded-full bg-[#C2795A] border-[1.5px] border-[#FBF6E9]"/>
+      )}
+    </span>
+  )
+
   return (
     <>
       {/* 5 tabs — same for leader & member */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#FBF6E9] border-t border-[#E7E0CC] flex items-stretch px-[6px] pb-[14px] pt-[8px]"
         style={{ paddingBottom: 'max(14px, env(safe-area-inset-bottom))' }}>
-        <TabBtn href="/dashboard"     label="Beranda" icon={IC.home}  active={pathname === '/dashboard'} />
-        <TabBtn href="/tasks"         label="Task"    icon={IC.tasks} active={pathname === '/tasks'} />
-        <TabBtn href="/daily-reports" label="Daily"   icon={IC.daily} active={pathname === '/daily-reports'} />
-        <TabBtn href="/kpi"           label="KPI"     icon={IC.kpi}   active={pathname === '/kpi'} />
+        <TabBtn href="/dashboard"     label="Beranda" icon={IC.home}    active={pathname === '/dashboard'} />
+        <TabBtn href="/tasks"         label="Task"    icon={IC.tasks}   active={pathname === '/tasks'} />
+        <TabBtn href="/daily-reports" label="Daily"   icon={dailyIcon}  active={pathname === '/daily-reports'} />
+        <TabBtn href="/kpi"           label="KPI"     icon={IC.kpi}     active={pathname === '/kpi'} />
         <TabBtn label="Lainnya" icon={IC.more} active={moreActive} onClick={() => setMoreOpen(o => !o)} />
       </nav>
 
