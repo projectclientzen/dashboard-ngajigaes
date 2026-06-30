@@ -4,9 +4,11 @@ import type { Task, TaskComment, TaskStatus } from '@/types'
 
 type RawRow = Record<string, unknown>
 
-export function useTasks(assigneeId?: string) {
+// userId: jika diisi → tampil task yg di-assign KE user ATAU dibuat OLEH user
+// undefined → tampil semua (untuk leader)
+export function useTasks(userId?: string) {
   return useQuery({
-    queryKey: ['tasks', assigneeId],
+    queryKey: ['tasks', userId],
     queryFn: async (): Promise<Task[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -16,7 +18,8 @@ export function useTasks(assigneeId?: string) {
         .select('*, assignee:users!tasks_assignee_id_fkey(name)')
         .order('created_at', { ascending: false })
 
-      if (assigneeId) q = q.eq('assignee_id', assigneeId)
+      // Member: lihat task yg di-assign ke mereka ATAU yang mereka buat
+      if (userId) q = q.or(`assignee_id.eq.${userId},created_by.eq.${userId}`)
 
       const { data, error } = await q as { data: RawRow[] | null; error: unknown }
       if (error) throw error

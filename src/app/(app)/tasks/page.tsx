@@ -117,19 +117,17 @@ export default function TasksPage() {
           <button className={segBtn(view === 'kanban')} onClick={() => setView('kanban')}>Kanban</button>
           <button className={segBtn(view === 'table')} onClick={() => setView('table')}>Tabel</button>
         </div>
-        {isLeader && (
-          <button onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors">
-            + Buat Task
-          </button>
-        )}
+        <button onClick={() => setShowCreate(true)}
+          className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors">
+          + Buat Task
+        </button>
       </div>
 
       {tasks.length === 0 && (
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 flex flex-col items-center gap-3 text-center">
           <div className="text-[16px] font-bold text-[#2B2A24]">Belum ada task</div>
           <div className="text-[13px] text-[#9A9279]">
-            {isLeader ? 'Klik "+ Buat Task" untuk membuat task pertama.' : 'Task yang ditugaskan ke kamu akan muncul di sini.'}
+            Klik &quot;+ Buat Task&quot; untuk membuat task dan assign ke anggota tim.
           </div>
         </div>
       )}
