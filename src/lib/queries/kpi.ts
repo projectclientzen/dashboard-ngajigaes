@@ -127,6 +127,36 @@ export function useUpsertKpiResult() {
         .upsert(result, { onConflict: 'kpi_id,user_id,period_start,period_end' })
       if (error) throw error
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpi-results'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['kpi-results'] })
+      qc.invalidateQueries({ queryKey: ['all-kpi-results'] })
+    },
   })
+}
+
+/** Ambil semua daily_reports user dalam range untuk recompute KPI */
+export async function fetchDailyKpiEntries(
+  userId: string, start: string, end: string
+): Promise<{ kpi_id: string; qty: number }[]> {
+  const { createClient } = await import('@/lib/supabase/client')
+  const supabase = createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('daily_reports')
+    .select('kpi_entries')
+    .eq('user_id', userId)
+    .gte('report_date', start)
+    .lte('report_date', end)
+  if (error) throw error
+
+  // Akumulasi qty per kpi_id dari semua hari
+  const totals: Record<string, number> = {}
+  for (const row of (data ?? []) as { kpi_entries: { kpi_id: string; qty: number }[] | null }[]) {
+    for (const entry of row.kpi_entries ?? []) {
+      if (entry.kpi_id && entry.qty > 0) {
+        totals[entry.kpi_id] = (totals[entry.kpi_id] ?? 0) + entry.qty
+      }
+    }
+  }
+  return Object.entries(totals).map(([kpi_id, qty]) => ({ kpi_id, qty }))
 }

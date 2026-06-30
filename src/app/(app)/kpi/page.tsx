@@ -157,7 +157,12 @@ export default function KpiPage() {
                   const user = users.find(u => u.id === k.user_id)
                   const name = user?.name ?? k.user_id.slice(0, 8)
                   return (
-                    <tr key={`${k.kpi_id}-${k.user_id}-${idx}`} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]">
+                    <tr key={`${k.kpi_id}-${k.user_id}-${idx}`}
+                      className="border-t border-[#F1ECDC] hover:bg-[#FBF6E9] cursor-pointer group"
+                      onClick={() => {
+                        setResultForm({ kpi_id: k.kpi_id, user_id: k.user_id, actual_value: String(k.actual_value), notes: '' })
+                        setShowInputResult(true)
+                      }}>
                       <td className="p-[12px_16px] font-semibold text-[#2B2A24]">{k.kpi_name}</td>
                       <td className="p-[12px_16px]">
                         <div className="flex items-center gap-[7px]">
@@ -176,6 +181,7 @@ export default function KpiPage() {
                             <div className="h-full rounded-full transition-[width_.4s]" style={{ width: `${cap}%`, background: bc }}/>
                           </div>
                           <span className="text-[12px] font-bold w-[38px] text-right" style={{ color: bc }}>{pct}%</span>
+                          <span className="text-[10px] text-[#4F7CAC] opacity-0 group-hover:opacity-100 transition-opacity">Edit</span>
                         </div>
                       </td>
                     </tr>
@@ -305,7 +311,9 @@ export default function KpiPage() {
           <div className="absolute inset-0 bg-black/30" onClick={() => setShowInputResult(false)}/>
           <div className="relative bg-white rounded-xl border border-[#EBE5D4] shadow-xl w-full max-w-sm p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-[16px] font-bold text-[#2B2A24]">Input Nilai KPI</h3>
+              <h3 className="text-[16px] font-bold text-[#2B2A24]">
+                {resultForm.kpi_id && resultForm.actual_value ? 'Edit Nilai KPI' : 'Input Nilai KPI'}
+              </h3>
               <button onClick={() => setShowInputResult(false)} className="text-[#9A9279] text-xl border-none bg-none cursor-pointer">×</button>
             </div>
             <div className="flex flex-col gap-[6px]">
