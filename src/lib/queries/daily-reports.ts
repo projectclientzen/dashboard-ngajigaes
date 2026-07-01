@@ -34,6 +34,7 @@ export function useDailyReports(date?: string, userId?: string) {
         ideas_insights: r.ideas_insights as string | null,
         notes: r.notes as string | null,
         work_link: r.work_link as string | null,
+        proof_url: r.proof_url as string | null,
         kpi_entries: (r.kpi_entries as { kpi_id: string; qty: number }[] | null) ?? [],
       })) as DailyReport[]
     },
@@ -69,6 +70,7 @@ export function useUpsertDailyReport() {
       ideas_insights?: string
       notes?: string
       work_link?: string
+      proof_url?: string
       kpi_entries?: { kpi_id: string; qty: number }[]
     }) => {
       const { error } = await db()

@@ -146,6 +146,7 @@ export interface DailyReport {
   ideas_insights: string | null
   notes: string | null
   work_link: string | null
+  proof_url: string | null
   kpi_entries: { kpi_id: string; qty: number }[]
 }
 

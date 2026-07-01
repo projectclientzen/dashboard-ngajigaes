@@ -16,6 +16,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     ideas_insights: 'Format "before vs after" bisa dicoba untuk konten keuangan',
     notes: null,
     work_link: 'https://notion.so/example',
+    proof_url: null,
     kpi_entries: [],
   },
   {
@@ -30,6 +31,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     ideas_insights: null,
     notes: null,
     work_link: 'https://drive.google.com/example',
+    proof_url: null,
     kpi_entries: [],
   },
   {
@@ -44,6 +46,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     ideas_insights: null,
     notes: null,
     work_link: 'https://notion.so/example',
+    proof_url: null,
     kpi_entries: [],
   },
 ]

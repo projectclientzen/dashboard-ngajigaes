@@ -1,11 +1,60 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useDailyReports, useUpsertDailyReport } from '@/lib/queries/daily-reports'
 import { useKpis, useUpsertKpiResult, fetchDailyKpiEntries } from '@/lib/queries/kpi'
+import { createClient } from '@/lib/supabase/client'
 import { getInitials, todayJakarta, formatDate } from '@/lib/utils'
 import type { Kpi } from '@/types'
+
+const BUCKET = 'daily-report-proofs'
+
+/** Convert File ke WebP via Canvas, fallback ke original jika bukan image */
+async function toWebP(file: File, quality = 0.82): Promise<File> {
+  if (!file.type.startsWith('image/')) return file          // PDF → skip convert
+  if (file.type === 'image/gif') return file                // GIF → skip (lossy convert rusak animasi)
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob(
+        blob => {
+          if (!blob) { reject(new Error('Canvas toBlob gagal')); return }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.webp'), { type: 'image/webp' }))
+        },
+        'image/webp',
+        quality
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gagal load gambar')) }
+    img.src = url
+  })
+}
+
+async function uploadProof(userId: string, file: File): Promise<string> {
+  const converted = await toWebP(file)
+  const ext   = converted.name.split('.').pop()
+  const path  = `${userId}/${Date.now()}.${ext}`
+  const supabase = createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any).storage.from(BUCKET).upload(path, converted, { upsert: true })
+  if (error) throw error
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = (supabase as any).storage.from(BUCKET).getPublicUrl(path)
+  // bucket private → pakai signed URL
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: signed, error: signErr } = await (supabase as any).storage
+    .from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365) // 1 tahun
+  if (signErr) throw signErr
+  return (signed?.signedUrl ?? data?.publicUrl) as string
+}
 
 const AVATAR_COLORS = ['#5E7A5C','#4F7CAC','#C2795A','#8A6BA8','#3F8C8C','#B07A3C']
 function avatarColor(name: string) {
@@ -28,6 +77,34 @@ export default function DailyReportsPage() {
   const [blocker, setBlocker] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [syncing, setSyncing] = useState(false)
+
+  // Upload proof
+  const fileInputRef            = useRef<HTMLInputElement>(null)
+  const [proofFile, setProofFile]     = useState<File | null>(null)
+  const [proofPreview, setProofPreview] = useState<string | null>(null)
+  const [uploading, setUploading]     = useState(false)
+  const [uploadErr, setUploadErr]     = useState('')
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setProofFile(f)
+    setUploadErr('')
+    if (f.type.startsWith('image/')) {
+      const url = URL.createObjectURL(f)
+      setProofPreview(url)
+    } else {
+      setProofPreview(null) // PDF → no preview
+    }
+  }
+
+  function removeProof() {
+    setProofFile(null)
+    if (proofPreview) URL.revokeObjectURL(proofPreview)
+    setProofPreview(null)
+    setUploadErr('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   // KPI entries — list pasangan kpi_id + qty (optional)
   const [kpiEntries, setKpiEntries] = useState<KpiEntry[]>([{ kpi_id: '', qty: '' }])
@@ -73,6 +150,21 @@ export default function DailyReportsPage() {
   async function handleSubmit() {
     if (!plan && !done) return
     if (!userId) return
+    setUploadErr('')
+
+    // Upload proof dulu jika ada
+    let proofUrl: string | undefined
+    if (proofFile) {
+      setUploading(true)
+      try {
+        proofUrl = await uploadProof(userId, proofFile)
+      } catch (e) {
+        setUploadErr((e as Error).message)
+        setUploading(false)
+        return
+      }
+      setUploading(false)
+    }
 
     // Siapkan kpi_entries yang valid (ada kpi_id dan qty > 0)
     const validEntries = kpiEntries
@@ -85,6 +177,7 @@ export default function DailyReportsPage() {
       plan_today: plan || undefined,
       completed_work: done || undefined,
       blockers: blocker || undefined,
+      proof_url: proofUrl,
       kpi_entries: validEntries.length > 0 ? validEntries : undefined,
     })
 
@@ -96,6 +189,7 @@ export default function DailyReportsPage() {
 
     setPlan(''); setDone(''); setBlocker('')
     setKpiEntries([{ kpi_id: '', qty: '' }])
+    removeProof()
     setSubmitted(true)
     setTimeout(() => setSubmitted(false), 3000)
   }
@@ -174,10 +268,52 @@ export default function DailyReportsPage() {
             </div>
           )}
 
+          {/* ── Upload Bukti ────────────────────────────── */}
+          <div className="mb-[14px]">
+            <label className="text-[12px] font-semibold text-[#5A574C] block mb-[6px]">
+              Bukti Kerja <span className="text-[#B0A78C] font-normal">(opsional · foto/PDF · max 5 MB)</span>
+            </label>
+            {!proofFile ? (
+              <button type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full border-2 border-dashed border-[#D9D3C0] rounded-lg py-[20px] flex flex-col items-center gap-2 cursor-pointer bg-[#FDFAF3] hover:border-[#5E7A5C] hover:bg-[#F5F1E6] transition-colors">
+                <span className="text-[22px]">📎</span>
+                <span className="text-[12px] text-[#7A766B] font-semibold">Klik untuk upload foto / PDF</span>
+                <span className="text-[11px] text-[#B0A78C]">Foto otomatis dikonversi ke WebP</span>
+              </button>
+            ) : (
+              <div className="border border-[#E3DCC8] rounded-lg p-3 bg-[#FCFAF2] flex items-start gap-3">
+                {proofPreview ? (
+                  <img src={proofPreview} alt="preview"
+                    className="w-[72px] h-[72px] object-cover rounded-md flex-shrink-0 border border-[#EBE5D4]"/>
+                ) : (
+                  <div className="w-[72px] h-[72px] rounded-md flex items-center justify-center bg-[#F0EBDA] text-[28px] flex-shrink-0">📄</div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[12px] font-semibold text-[#2B2A24] truncate">{proofFile.name}</div>
+                  <div className="text-[11px] text-[#A89F86] mt-[2px]">
+                    {(proofFile.size / 1024).toFixed(0)} KB
+                    {proofFile.type.startsWith('image/') && proofFile.type !== 'image/gif'
+                      ? ' · akan dikonversi ke WebP' : ''}
+                  </div>
+                  {uploading && <div className="text-[11px] text-[#4F7CAC] mt-1 font-semibold">Mengupload...</div>}
+                </div>
+                <button onClick={removeProof}
+                  className="text-[#B4452F] text-[18px] leading-none border-none bg-none cursor-pointer flex-shrink-0">×</button>
+              </div>
+            )}
+            <input ref={fileInputRef} type="file" className="hidden"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}/>
+            {uploadErr && (
+              <div className="mt-2 text-[12px] text-[#B4452F] bg-[#F7E7E2] border border-[#EAC8BF] rounded-md px-3 py-2">{uploadErr}</div>
+            )}
+          </div>
+
           <div className="flex items-center gap-3">
-            <button onClick={handleSubmit} disabled={upsert.isPending || syncing}
+            <button onClick={handleSubmit} disabled={upsert.isPending || syncing || uploading}
               className="bg-[#5E7A5C] text-white border-none rounded-md px-5 py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors disabled:opacity-60">
-              {syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : 'Kirim Laporan'}
+              {uploading ? 'Upload bukti...' : syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : 'Kirim Laporan'}
             </button>
             {submitted && <span className="text-[12px] font-semibold text-[#5E8C61]">✓ Laporan & KPI tersimpan</span>}
           </div>
@@ -201,6 +337,10 @@ export default function DailyReportsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="text-[13px] font-semibold text-[#2B2A24]">{r.user_name}</div>
                     <div className="text-[11px] text-[#A89F86] truncate">{r.plan_today ?? '—'}</div>
+                    {r.proof_url && (
+                      <a href={r.proof_url} target="_blank" rel="noopener noreferrer"
+                        className="text-[10px] text-[#4F7CAC] underline mt-[2px] inline-block">📎 Lihat bukti</a>
+                    )}
                     {r.kpi_entries && r.kpi_entries.length > 0 && (
                       <div className="flex flex-wrap gap-[4px] mt-[3px]">
                         {r.kpi_entries.map((e, i) => {
@@ -230,14 +370,14 @@ export default function DailyReportsPage() {
         <table className="w-full border-collapse text-[12.5px]">
           <thead>
             <tr className="bg-[#FBF6E9]">
-              {['ANGGOTA','RENCANA','SELESAI','BLOCKER','KPI HARI INI'].map(h => (
+              {['ANGGOTA','RENCANA','SELESAI','BLOCKER','KPI HARI INI','BUKTI'].map(h => (
                 <th key={h} className="p-[10px_16px] text-left text-[10px] font-semibold text-[#9A9279]">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {reports.length === 0 && (
-              <tr><td colSpan={5} className="p-6 text-center text-[13px] text-[#A89F86]">Belum ada laporan.</td></tr>
+              <tr><td colSpan={6} className="p-6 text-center text-[13px] text-[#A89F86]">Belum ada laporan.</td></tr>
             )}
             {reports.map(r => (
               <tr key={r.id} className="border-t border-[#F1ECDC] align-top">
@@ -271,6 +411,16 @@ export default function DailyReportsPage() {
                         )
                       })}
                     </div>
+                  ) : (
+                    <span className="text-[#B0A78C]">—</span>
+                  )}
+                </td>
+                <td className="p-[12px_16px]">
+                  {r.proof_url ? (
+                    <a href={r.proof_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-[#4F7CAC] font-semibold hover:underline">
+                      📎 Lihat
+                    </a>
                   ) : (
                     <span className="text-[#B0A78C]">—</span>
                   )}
