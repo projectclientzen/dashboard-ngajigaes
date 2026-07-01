@@ -7,6 +7,8 @@ import { useApp } from '@/contexts/AppContext'
 import { ROLE_NAMES } from '@/lib/constants'
 import { createClient } from '@/lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
+import { useTasks } from '@/lib/queries/tasks'
+import { useExtraTasks } from '@/lib/queries/extra-tasks'
 
 // ─── Icons ─────────────────────────────────────────────────────
 const IC = {
@@ -25,43 +27,41 @@ const IC = {
   logout:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
 }
 
-// Nav untuk Leader
 const LEADER_NAV = [
   { label: 'UTAMA', items: [
-    { href: '/dashboard',         label: 'Dashboard',          icon: IC.dashboard },
+    { href: '/dashboard',         label: 'Dashboard',          icon: IC.dashboard, badge: false },
   ]},
   { label: 'KERJA TIM', items: [
-    { href: '/tasks',             label: 'Task Board',         icon: IC.tasks },
-    { href: '/daily-reports',     label: 'Daily Report',       icon: IC.daily },
-    { href: '/kpi',               label: 'KPI & Scorecard',    icon: IC.kpi },
-    { href: '/team-performance',  label: 'Team Performance',   icon: IC.team },
-    { href: '/extra-tasks',       label: 'Tugas Tambahan',     icon: IC.extra },
+    { href: '/tasks',             label: 'Task Board',         icon: IC.tasks,     badge: true },
+    { href: '/daily-reports',     label: 'Daily Report',       icon: IC.daily,     badge: false },
+    { href: '/kpi',               label: 'KPI & Scorecard',    icon: IC.kpi,       badge: false },
+    { href: '/team-performance',  label: 'Team Performance',   icon: IC.team,      badge: false },
+    { href: '/extra-tasks',       label: 'Tugas Tambahan',     icon: IC.extra,     badge: false },
   ]},
   { label: 'KONTEN', items: [
-    { href: '/content-calendar',  label: 'Content Calendar',   icon: IC.calendar },
-    { href: '/instagram-insight', label: 'Instagram Insight',  icon: IC.instagram },
+    { href: '/content-calendar',  label: 'Content Calendar',   icon: IC.calendar,  badge: false },
+    { href: '/instagram-insight', label: 'Instagram Insight',  icon: IC.instagram, badge: false },
   ]},
   { label: 'BISNIS', items: [
-    { href: '/sales',             label: 'Omzet & Produk',     icon: IC.sales },
-    { href: '/weekly-review',     label: 'Weekly Review',      icon: IC.review },
+    { href: '/sales',             label: 'Omzet & Produk',     icon: IC.sales,     badge: false },
+    { href: '/weekly-review',     label: 'Weekly Review',      icon: IC.review,    badge: false },
   ]},
 ]
 
-// Nav untuk Member (feed_socmed, reels_ads, curator)
 const MEMBER_NAV = [
   { label: 'UTAMA', items: [
-    { href: '/dashboard',         label: 'Beranda',            icon: IC.dashboard },
+    { href: '/dashboard',         label: 'Beranda',            icon: IC.dashboard, badge: false },
   ]},
   { label: 'PEKERJAAN SAYA', items: [
-    { href: '/tasks',             label: 'Tugas Saya',         icon: IC.tasks },
-    { href: '/daily-reports',     label: 'Daily Report',       icon: IC.daily },
-    { href: '/content-calendar',  label: 'Konten Saya',        icon: IC.calendar },
-    { href: '/extra-tasks',       label: 'Tugas Tambahan',     icon: IC.extra },
+    { href: '/tasks',             label: 'Tugas Saya',         icon: IC.tasks,     badge: true },
+    { href: '/daily-reports',     label: 'Daily Report',       icon: IC.daily,     badge: false },
+    { href: '/content-calendar',  label: 'Konten Saya',        icon: IC.calendar,  badge: false },
+    { href: '/extra-tasks',       label: 'Tugas Tambahan',     icon: IC.extra,     badge: true },
   ]},
   { label: 'PERFORMA', items: [
-    { href: '/kpi',               label: 'KPI Saya',           icon: IC.kpi },
-    { href: '/instagram-insight', label: 'Instagram Insight',  icon: IC.instagram },
-    { href: '/my-performance',    label: 'Performa Saya',      icon: IC.perf },
+    { href: '/kpi',               label: 'KPI Saya',           icon: IC.kpi,       badge: false },
+    { href: '/instagram-insight', label: 'Instagram Insight',  icon: IC.instagram, badge: false },
+    { href: '/my-performance',    label: 'Performa Saya',      icon: IC.perf,      badge: false },
   ]},
 ]
 
@@ -70,16 +70,26 @@ function avatarBg(name: string) {
   return AVATAR_COLORS[name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length]
 }
 
-function NavItem({ href, label, icon }: { href: string; label: string; icon: React.ReactNode }) {
+function NavItem({ href, label, icon, taskBadge, extraBadge }: {
+  href: string; label: string; icon: React.ReactNode
+  taskBadge?: number; extraBadge?: number
+}) {
   const pathname = usePathname()
   const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
+  const total = (taskBadge ?? 0) + (extraBadge ?? 0)
   return (
     <Link href={href}
       className={cn(
         'flex items-center gap-[11px] px-[11px] py-[9px] my-[1px] rounded-md text-[13px] font-medium no-underline cursor-pointer transition-colors',
         active ? 'font-semibold text-[#3F5A3E] bg-[#E5EDDF]' : 'text-[#6E6B5F] hover:bg-[#EEE9D8]'
       )}>
-      {icon}{label}
+      {icon}
+      <span className="flex-1">{label}</span>
+      {total > 0 && (
+        <span className="min-w-[18px] h-[18px] rounded-full bg-[#C2795A] text-white text-[10px] font-bold flex items-center justify-center px-[4px]">
+          {total > 99 ? '99+' : total}
+        </span>
+      )}
     </Link>
   )
 }
@@ -87,7 +97,19 @@ function NavItem({ href, label, icon }: { href: string; label: string; icon: Rea
 export function Sidebar() {
   const router = useRouter()
   const qc = useQueryClient()
-  const { userRole, userName, isLoading, isLeader } = useApp()
+  const { userId, userRole, userName, isLoading, isLeader } = useApp()
+
+  // Badge data
+  const tasksQ  = useTasks(undefined)
+  const extraQ  = useExtraTasks(userId ?? undefined)
+
+  const pendingTasks = (tasksQ.data ?? []).filter(t =>
+    t.assignee_id === userId && ['todo','backlog','in_progress','revision'].includes(t.status)
+  ).length
+
+  const pendingExtra = (extraQ.data ?? []).filter(t =>
+    t.status === 'pending'
+  ).length
 
   const nav = isLeader ? LEADER_NAV : MEMBER_NAV
   const name = userName ?? 'User'
@@ -102,7 +124,6 @@ export function Sidebar() {
 
   return (
     <aside className="w-[236px] flex-shrink-0 h-full bg-[#FCF8EC] border-r border-[#E7E0CC] flex flex-col py-[18px] px-[14px]">
-      {/* Logo */}
       <div className="flex items-center gap-[9px] px-2 pb-4">
         <div className="w-[30px] h-[30px] rounded-lg bg-[#7E997B] flex items-center justify-center text-[#FCF8EC] font-['Bitter'] font-bold text-[17px]">N</div>
         <div className="font-['Bitter'] font-bold text-[19px] text-[#5E7A5C] tracking-tight">
@@ -110,24 +131,23 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Nav sections */}
       {nav.map(section => (
         <div key={section.label}>
           <div className="text-[10px] font-semibold tracking-[.09em] text-[#A89F86] px-[10px] py-[6px] mt-2 mb-1">
             {section.label}
           </div>
           {section.items.map(item => (
-            <NavItem key={item.href} {...item} />
+            <NavItem key={item.href} {...item}
+              taskBadge={item.badge && item.href === '/tasks' ? pendingTasks : undefined}
+              extraBadge={item.badge && item.href === '/extra-tasks' ? pendingExtra : undefined}
+            />
           ))}
         </div>
       ))}
 
       <div className="flex-1" />
-
-      {/* Settings — Leader only */}
       {isLeader && <NavItem href="/settings" label="Settings" icon={IC.settings} />}
 
-      {/* User card + logout */}
       <div className="border-t border-[#E7E0CC] mt-2 pt-2">
         <div className="flex items-center gap-[10px] px-2 py-[9px]">
           <div className="w-8 h-8 rounded-[9px] flex items-center justify-center font-semibold text-[13px] text-[#FCF8EC] flex-shrink-0"

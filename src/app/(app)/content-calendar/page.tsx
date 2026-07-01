@@ -52,13 +52,26 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 const ALL_STATUSES = Object.keys(STATUS_META) as ContentStatus[]
 
+// Helpers untuk calendar view
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate()
+}
+function getFirstDayOfMonth(year: number, month: number) {
+  return new Date(year, month, 1).getDay() // 0=Sun
+}
+const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+const DAYS_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
+
 export default function ContentCalendarPage() {
-  const { isLeader, rangeStart, rangeEnd } = useApp()
+  const { userId, isLeader, rangeStart, rangeEnd } = useApp()
   const contentsQ = useContents(rangeStart, rangeEnd)
   const usersQ = useAllUsers()
   const createContent = useCreateContent()
   const updateContent = useUpdateContent()
 
+  const [view, setView] = useState<'table' | 'calendar'>('table')
+  const [calYear, setCalYear]   = useState(() => new Date().getFullYear())
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth())
   const [filterStatus, setFilterStatus] = useState<ContentStatus | 'all'>('all')
   const [showDrawer, setShowDrawer] = useState(false)
   const [selected, setSelected] = useState<Content | null>(null)
@@ -81,7 +94,8 @@ export default function ContentCalendarPage() {
 
   function openNew() {
     setSelected(null)
-    setForm({ title: '', format: 'feed_single', objective: 'awareness', status: 'idea', pic_id: '', theme: '', publish_date: '', caption: '', hook: '', cta: '', asset_link: '' })
+    // Non-leader: PIC default ke diri sendiri
+    setForm({ title: '', format: 'feed_single', objective: 'awareness', status: 'idea', pic_id: isLeader ? '' : (userId ?? ''), theme: '', publish_date: '', caption: '', hook: '', cta: '', asset_link: '' })
     setErr('')
     setShowDrawer(true)
   }
@@ -127,11 +141,19 @@ export default function ContentCalendarPage() {
 
   const isPending = createContent.isPending || updateContent.isPending
 
+  const segBtn = (active: boolean) =>
+    `px-[13px] py-[5px] rounded-md text-[12px] font-semibold cursor-pointer border-none transition-all ${active ? 'bg-white text-[#3F5A3E] shadow-sm' : 'bg-transparent text-[#8A8675]'}`
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Filter + tombol */}
+      {/* View toggle + Filter + tombol */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
+          {/* View toggle */}
+          <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px] mr-2">
+            <button className={segBtn(view === 'table')} onClick={() => setView('table')}>Tabel</button>
+            <button className={segBtn(view === 'calendar')} onClick={() => setView('calendar')}>Kalender</button>
+          </div>
           <button
             onClick={() => setFilterStatus('all')}
             className={`px-[12px] py-[5px] rounded-full text-[12px] font-semibold border-none cursor-pointer transition-all ${filterStatus === 'all' ? 'bg-[#5E7A5C] text-white' : 'bg-[#EFEAD9] text-[#5A574C]'}`}>
@@ -158,8 +180,65 @@ export default function ContentCalendarPage() {
         </button>
       </div>
 
-      {/* Tabel */}
-      <div className="bg-white border border-[#EBE5D4] rounded-lg overflow-hidden">
+      {/* ── Calendar View ──────────────────────────────── */}
+      {view === 'calendar' && (
+        <div className="bg-white border border-[#EBE5D4] rounded-lg overflow-hidden">
+          {/* Nav bulan */}
+          <div className="flex items-center justify-between px-4 py-3 bg-[#FBF6E9] border-b border-[#EBE5D4]">
+            <button onClick={() => {
+              if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1) }
+              else setCalMonth(m => m - 1)
+            }} className="px-3 py-1 rounded-md text-[13px] text-[#5A574C] hover:bg-[#EFEAD9] border-none bg-none cursor-pointer">‹</button>
+            <span className="text-[14px] font-bold text-[#2B2A24]">{MONTHS_ID[calMonth]} {calYear}</span>
+            <button onClick={() => {
+              if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1) }
+              else setCalMonth(m => m + 1)
+            }} className="px-3 py-1 rounded-md text-[13px] text-[#5A574C] hover:bg-[#EFEAD9] border-none bg-none cursor-pointer">›</button>
+          </div>
+          {/* Grid hari */}
+          <div className="grid grid-cols-7 border-b border-[#EBE5D4]">
+            {DAYS_ID.map(d => (
+              <div key={d} className="py-2 text-center text-[10px] font-semibold text-[#A89F86] bg-[#FBF6E9]">{d}</div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {/* Padding hari pertama */}
+            {Array.from({ length: getFirstDayOfMonth(calYear, calMonth) }).map((_, i) => (
+              <div key={`pad-${i}`} className="border-r border-b border-[#F1ECDC] min-h-[80px] bg-[#FDFAF3]"/>
+            ))}
+            {/* Hari dalam bulan */}
+            {Array.from({ length: getDaysInMonth(calYear, calMonth) }).map((_, i) => {
+              const day  = i + 1
+              const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+              const dayContents = contents.filter(c => c.publish_date?.startsWith(dateStr))
+              const isToday = dateStr === new Date().toISOString().split('T')[0]
+              return (
+                <div key={day} className="border-r border-b border-[#F1ECDC] min-h-[80px] p-[4px]">
+                  <div className={`text-[11px] font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#5E7A5C] text-white' : 'text-[#7A766B]'}`}>
+                    {day}
+                  </div>
+                  <div className="flex flex-col gap-[2px]">
+                    {dayContents.map(c => {
+                      const sm = STATUS_META[c.status]
+                      return (
+                        <button key={c.id}
+                          onClick={() => openEdit(c)}
+                          className="text-left text-[10px] font-semibold px-[5px] py-[2px] rounded truncate w-full border-none cursor-pointer"
+                          style={{ background: sm.bg, color: sm.c }}>
+                          {c.title}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Table View ──────────────────────────────────── */}
+      {view === 'table' && <div className="bg-white border border-[#EBE5D4] rounded-lg overflow-hidden">
         {contentsQ.isLoading ? (
           <div className="p-8 text-center text-[13px] text-[#9A9279]">Memuat...</div>
         ) : filtered.length === 0 ? (
@@ -210,7 +289,7 @@ export default function ContentCalendarPage() {
             </tbody>
           </table>
         )}
-      </div>
+      </div>}
 
       {/* Drawer */}
       {showDrawer && (
