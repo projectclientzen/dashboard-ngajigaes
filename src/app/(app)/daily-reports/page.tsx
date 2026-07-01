@@ -10,20 +10,29 @@ import type { Kpi } from '@/types'
 
 const BUCKET = 'daily-report-proofs'
 
-/** Convert File ke WebP via Canvas, fallback ke original jika bukan image */
+const MAX_DIM = 1920 // resize panjang sisi terbesar ke maks ini
+
+/** Convert File ke WebP via Canvas dengan resize, fallback ke original jika bukan image */
 async function toWebP(file: File, quality = 0.82): Promise<File> {
-  if (!file.type.startsWith('image/')) return file          // PDF → skip convert
-  if (file.type === 'image/gif') return file                // GIF → skip (lossy convert rusak animasi)
+  if (!file.type.startsWith('image/')) return file          // PDF → skip
+  if (file.type === 'image/gif') return file                // GIF → skip
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)
     img.onload = () => {
       URL.revokeObjectURL(url)
+      // Hitung dimensi setelah resize
+      let w = img.naturalWidth
+      let h = img.naturalHeight
+      if (w > MAX_DIM || h > MAX_DIM) {
+        if (w >= h) { h = Math.round((h / w) * MAX_DIM); w = MAX_DIM }
+        else        { w = Math.round((w / h) * MAX_DIM); h = MAX_DIM }
+      }
       const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
+      canvas.width  = w
+      canvas.height = h
       const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0)
+      ctx.drawImage(img, 0, 0, w, h)
       canvas.toBlob(
         blob => {
           if (!blob) { reject(new Error('Canvas toBlob gagal')); return }
@@ -88,13 +97,18 @@ export default function DailyReportsPage() {
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
+    if (f.size > 10 * 1024 * 1024) {
+      setUploadErr('File terlalu besar. Maksimal 10 MB.')
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
     setProofFile(f)
     setUploadErr('')
     if (f.type.startsWith('image/')) {
       const url = URL.createObjectURL(f)
       setProofPreview(url)
     } else {
-      setProofPreview(null) // PDF → no preview
+      setProofPreview(null)
     }
   }
 

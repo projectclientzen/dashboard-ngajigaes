@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import { useKpis, useAllKpiResults, useCreateKpi, useUpdateKpi, useUpsertKpiResult } from '@/lib/queries/kpi'
+import { useKpis, useAllKpiResults, useCreateKpi, useUpdateKpi, useDeleteKpi, useUpsertKpiResult } from '@/lib/queries/kpi'
 import { useAllUsers } from '@/lib/queries/daily-reports'
 import { getInitials, formatNumber } from '@/lib/utils'
 import type { KpiPeriod, KpiCalculationMethod } from '@/types'
@@ -30,8 +30,9 @@ export default function KpiPage() {
   const allQ      = useAllKpiResults(rangeStart, rangeEnd)
   const kpisQ     = useKpis()
   const usersQ    = useAllUsers()
-  const createKpi = useCreateKpi()
-  const updateKpi = useUpdateKpi()
+  const createKpi  = useCreateKpi()
+  const updateKpi  = useUpdateKpi()
+  const deleteKpi  = useDeleteKpi()
   const upsertResult = useUpsertKpiResult()
 
   const [showCreateKpi, setShowCreateKpi] = useState(false)
@@ -246,7 +247,7 @@ export default function KpiPage() {
             <table className="w-full border-collapse text-[13px]">
               <thead>
                 <tr className="bg-[#FBF6E9]">
-                  {['NAMA KPI','KATEGORI','TARGET','UNIT','BOBOT','PERIODE'].map(h => (
+                  {['NAMA KPI','KATEGORI','TARGET','UNIT','BOBOT','PERIODE',''].map(h => (
                     <th key={h} className="p-[11px_16px] text-left text-[10px] font-semibold tracking-[.05em] text-[#9A9279]">{h}</th>
                   ))}
                 </tr>
@@ -262,12 +263,20 @@ export default function KpiPage() {
                     <td className="p-[11px_16px] text-[#5A574C]">{k.unit}</td>
                     <td className="p-[11px_16px] font-semibold text-[#2B2A24]">{k.weight}%</td>
                     <td className="p-[11px_16px]">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] bg-[#EFEAD9] text-[#5A574C] rounded-full px-[9px] py-[3px] font-semibold">
-                          {PERIOD_LABEL[k.period] ?? k.period}
-                        </span>
-                        <span className="text-[10px] text-[#4F7CAC] opacity-0 group-hover:opacity-100 transition-opacity">Edit</span>
-                      </div>
+                      <span className="text-[11px] bg-[#EFEAD9] text-[#5A574C] rounded-full px-[9px] py-[3px] font-semibold">
+                        {PERIOD_LABEL[k.period] ?? k.period}
+                      </span>
+                    </td>
+                    <td className="p-[11px_16px]" onClick={e => e.stopPropagation()}>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Hapus KPI "${k.name}"? Data hasil KPI tidak akan terhapus.`)) {
+                            deleteKpi.mutate(k.id)
+                          }
+                        }}
+                        className="text-[11px] text-[#B4452F] hover:underline border-none bg-none cursor-pointer font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
+                        Hapus
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -114,6 +114,17 @@ export function useCreateKpi() {
   })
 }
 
+export function useDeleteKpi() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db().from('kpis').update({ is_active: false }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['kpis'] }),
+  })
+}
+
 export function useUpdateKpi() {
   const qc = useQueryClient()
   return useMutation({

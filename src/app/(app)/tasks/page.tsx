@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import { useTasks, useTaskComments, useUpdateTaskStatus, useCreateTask, useAddComment } from '@/lib/queries/tasks'
+import { useTasks, useTaskComments, useUpdateTaskStatus, useUpdateTask, useCreateTask, useAddComment } from '@/lib/queries/tasks'
 import { useAllUsers } from '@/lib/queries/daily-reports'
 import { cn, getInitials, formatDate } from '@/lib/utils'
 import type { Task, TaskStatus, Priority } from '@/types'
@@ -53,11 +53,17 @@ const inputCls = 'border border-[#E3DCC8] rounded-md px-3 py-[9px] text-[13px] b
 
 export default function TasksPage() {
   const { userId, isLeader, isLoading: authLoading } = useApp()
-  const tasksQ     = useTasks(isLeader ? undefined : userId ?? undefined)
+  // Fix #4: semua tim lihat semua tasks (antar departemen)
+  const tasksQ     = useTasks(undefined)
   const usersQ     = useAllUsers()
   const updateStatus = useUpdateTaskStatus()
-  const createTask = useCreateTask()
-  const addComment = useAddComment()
+  const updateTask   = useUpdateTask()
+  const createTask   = useCreateTask()
+  const addComment   = useAddComment()
+
+  const [drawerResultLink, setDrawerResultLink] = useState('')
+  const [drawerDeadline, setDrawerDeadline]     = useState('')
+  const [savingLink, setSavingLink]             = useState(false)
 
   const [view, setView]           = useState<'kanban' | 'table'>('kanban')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -150,7 +156,8 @@ export default function TasksPage() {
                     <div key={tk.id} draggable
                       className="bg-white rounded-[7px] p-[11px_12px] cursor-pointer flex flex-col gap-2 shadow-sm"
                       style={{ border: `1px solid ${tk.is_overdue ? '#EAC8BF' : '#EBE5D4'}`, borderLeft: `3px solid ${col.color}` }}
-                      onClick={() => setSelectedId(tk.id)} onDragStart={() => setDragId(tk.id)}>
+                      onClick={() => { setSelectedId(tk.id); setDrawerResultLink(tk.result_link ?? ''); setDrawerDeadline(tk.deadline?.split('T')[0] ?? '') }}
+                      onDragStart={() => setDragId(tk.id)}>
                       <div className="text-[13px] font-semibold text-[#2B2A24] leading-[1.32]">{tk.title}</div>
                       <div className="flex items-center justify-between">
                         <PrioBadge p={tk.priority}/>
@@ -185,7 +192,8 @@ export default function TasksPage() {
             </thead>
             <tbody>
               {tasks.map(tk => (
-                <tr key={tk.id} className="border-t border-[#F1ECDC] cursor-pointer hover:bg-[#FDFAF3]" onClick={() => setSelectedId(tk.id)}>
+                <tr key={tk.id} className="border-t border-[#F1ECDC] cursor-pointer hover:bg-[#FDFAF3]"
+                  onClick={() => { setSelectedId(tk.id); setDrawerResultLink(tk.result_link ?? ''); setDrawerDeadline(tk.deadline?.split('T')[0] ?? '') }}>
                   <td className="p-[11px_16px]">
                     <div className="font-semibold text-[#2B2A24]">{tk.title}</div>
                     <div className="text-[11px] text-[#A89F86]">{tk.category}</div>
@@ -301,7 +309,13 @@ export default function TasksPage() {
               </div>
               <div>
                 <div className="text-[11px] text-[#A89F86] mb-[5px]">Deadline</div>
-                <div className="text-[13px] font-semibold text-[#2B2A24]">{selected.deadline ? formatDate(selected.deadline, 'd MMM yyyy') : 'Tanpa deadline'}</div>
+                {/* Fix #2: editable deadline */}
+                <input type="date" value={drawerDeadline}
+                  onChange={e => {
+                    setDrawerDeadline(e.target.value)
+                    updateTask.mutate({ id: selected.id, deadline: e.target.value || null })
+                  }}
+                  className="border border-[#E3DCC8] rounded-md px-2 py-[5px] text-[12px] bg-[#FCFAF2] text-[#2B2A24] focus:outline-none focus:border-[#7E997B] w-full"/>
               </div>
             </div>
             {selected.description && (
@@ -316,6 +330,29 @@ export default function TasksPage() {
                 <div className="text-[12px] text-[#5A574C]">{selected.revision_notes}</div>
               </div>
             )}
+            {/* Fix #1: result_link editable */}
+            <div className="flex flex-col gap-[6px]">
+              <label className="text-[11px] font-semibold text-[#5A574C]">Link Progress / Hasil</label>
+              <div className="flex gap-2">
+                <input className={`${inputCls} flex-1`} placeholder="https://drive.google.com/..."
+                  value={drawerResultLink}
+                  onChange={e => setDrawerResultLink(e.target.value)}
+                  onBlur={() => {
+                    if (drawerResultLink !== (selected.result_link ?? '')) {
+                      setSavingLink(true)
+                      updateTask.mutate({ id: selected.id, result_link: drawerResultLink || null },
+                        { onSettled: () => setSavingLink(false) })
+                    }
+                  }}/>
+                {drawerResultLink && (
+                  <a href={drawerResultLink} target="_blank" rel="noopener noreferrer"
+                    className="flex-shrink-0 bg-[#E8F0F6] text-[#4F7CAC] border-none rounded-md px-3 py-[9px] text-[12px] font-semibold cursor-pointer hover:bg-[#D5E5F2] no-underline">
+                    Buka
+                  </a>
+                )}
+              </div>
+              {savingLink && <span className="text-[11px] text-[#5E8C61]">Menyimpan...</span>}
+            </div>
             <div className="flex flex-col gap-[6px]">
               <label className="text-[11px] font-semibold text-[#5A574C]">Ubah Status</label>
               <select
