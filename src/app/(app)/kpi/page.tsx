@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useKpis, useAllKpiResults, useCreateKpi, useUpdateKpi, useDeleteKpi, useUpsertKpiResult } from '@/lib/queries/kpi'
 import { useAllUsers } from '@/lib/queries/daily-reports'
-import { getInitials, formatNumber } from '@/lib/utils'
+import { getInitials, formatNumber, kpiPeriodBounds } from '@/lib/utils'
 import type { KpiPeriod, KpiCalculationMethod } from '@/types'
 
 const AVATAR_COLORS = ['#5E7A5C','#4F7CAC','#C2795A','#8A6BA8','#3F8C8C','#B07A3C']
@@ -126,12 +126,14 @@ export default function KpiPage() {
     if (!kpi) { setResultErr('KPI tidak ditemukan.'); return }
     const actual = parseFloat(resultForm.actual_value)
     const pct = (actual / kpi.target_value) * 100
+    // Periode kalender KPI (stabil), bukan rolling window
+    const bounds = kpiPeriodBounds(kpi.period)
     try {
       await upsertResult.mutateAsync({
         kpi_id: resultForm.kpi_id,
         user_id: resultForm.user_id,
-        period_start: rangeStart,
-        period_end: rangeEnd,
+        period_start: bounds.start,
+        period_end: bounds.end,
         target_value: kpi.target_value,
         actual_value: actual,
         achievement_percentage: pct,
@@ -203,8 +205,9 @@ export default function KpiPage() {
                   const name = user?.name ?? k.user_id.slice(0, 8)
                   return (
                     <tr key={`${k.kpi_id}-${k.user_id}-${idx}`}
-                      className="border-t border-[#F1ECDC] hover:bg-[#FBF6E9] cursor-pointer group"
+                      className={`border-t border-[#F1ECDC] ${isLeader ? 'hover:bg-[#FBF6E9] cursor-pointer group' : 'hover:bg-[#FDFAF3]'}`}
                       onClick={() => {
+                        if (!isLeader) return // edit nilai hanya untuk leader
                         setResultForm({ kpi_id: k.kpi_id, user_id: k.user_id, actual_value: String(k.actual_value), notes: '' })
                         setShowInputResult(true)
                       }}>

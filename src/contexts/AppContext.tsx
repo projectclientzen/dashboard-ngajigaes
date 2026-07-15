@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useUser } from '@/lib/hooks/useUser'
+import { todayJakarta } from '@/lib/utils'
 import type { Role } from '@/types'
 
 export type DateRange = 'today' | '7d' | '30d' | '90d' | 'custom'
@@ -30,11 +31,9 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null)
 
-const fmt = (d: Date) => d.toISOString().split('T')[0]
-
 function computeRange(range: DateRange, customStart: string, customEnd: string): { start: string; end: string; label: string } {
-  const today = new Date()
-  const todayStr = fmt(today)
+  // Semua tanggal berbasis WIB — bukan UTC (toISOString) yang salah antara jam 00.00–07.00 WIB
+  const todayStr = todayJakarta()
 
   if (range === 'today') return { start: todayStr, end: todayStr, label: 'Hari ini' }
   if (range === 'custom') {
@@ -45,9 +44,10 @@ function computeRange(range: DateRange, customStart: string, customEnd: string):
     }
   }
   const days = range === '7d' ? 7 : range === '30d' ? 30 : 90
-  const start = new Date(); start.setDate(today.getDate() - days + 1)
+  const [y, m, d] = todayStr.split('-').map(Number)
+  const start = new Date(Date.UTC(y, m - 1, d - days + 1))
   return {
-    start: fmt(start),
+    start: start.toISOString().split('T')[0],
     end: todayStr,
     label: `${days} hari terakhir`,
   }

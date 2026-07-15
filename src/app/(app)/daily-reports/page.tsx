@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useDailyReports, useUpsertDailyReport } from '@/lib/queries/daily-reports'
 import { useKpis, useUpsertKpiResult, fetchDailyKpiEntries } from '@/lib/queries/kpi'
 import { createClient } from '@/lib/supabase/client'
-import { getInitials, todayJakarta, formatDate } from '@/lib/utils'
+import { getInitials, todayJakarta, formatDate, kpiPeriodBounds } from '@/lib/utils'
 import type { Kpi } from '@/types'
 
 const BUCKET = 'daily-report-proofs'
@@ -73,7 +73,7 @@ function avatarColor(name: string) {
 interface KpiEntry { kpi_id: string; qty: string }
 
 export default function DailyReportsPage() {
-  const { userId, isLeader, isLoading: authLoading, rangeStart, rangeEnd } = useApp()
+  const { userId, isLeader, isLoading: authLoading } = useApp()
   const today = todayJakarta()
 
   const reportsQ  = useDailyReports(today, isLeader ? undefined : userId ?? undefined)
@@ -123,6 +123,20 @@ export default function DailyReportsPage() {
   // KPI entries — list pasangan kpi_id + qty (optional)
   const [kpiEntries, setKpiEntries] = useState<KpiEntry[]>([{ kpi_id: '', qty: '' }])
 
+  // Prefill form dari laporan hari ini yang sudah ada (satu kali per laporan)
+  const [prefilledId, setPrefilledId] = useState<string | null>(null)
+  const myTodayReport = (reportsQ.data ?? []).find(r => r.user_id === userId)
+  useEffect(() => {
+    if (!myTodayReport || myTodayReport.id === prefilledId) return
+    setPlan(myTodayReport.plan_today ?? '')
+    setDone(myTodayReport.completed_work ?? '')
+    setBlocker(myTodayReport.blockers ?? '')
+    if (myTodayReport.kpi_entries.length > 0) {
+      setKpiEntries(myTodayReport.kpi_entries.map(e => ({ kpi_id: e.kpi_id, qty: String(e.qty) })))
+    }
+    setPrefilledId(myTodayReport.id)
+  }, [myTodayReport, prefilledId])
+
   // KPI yang relevan untuk user ini (global atau assigned)
   const myKpis: Kpi[] = (kpisQ.data ?? []).filter(
     k => k.user_id === userId || k.user_id === null
@@ -138,20 +152,23 @@ export default function DailyReportsPage() {
     setKpiEntries(prev => prev.map((e, idx) => idx === i ? { ...e, [field]: val } : e))
   }
 
-  const syncKpi = useCallback(async () => {
+  const syncKpi = useCallback(async (kpiIds: string[]) => {
     if (!userId) return
-    // Ambil semua daily_report entries dalam periode (termasuk yg baru disimpan)
-    const accumulated = await fetchDailyKpiEntries(userId, rangeStart, rangeEnd)
-    // Upsert kpi_result untuk setiap kpi yang punya qty
-    for (const { kpi_id, qty } of accumulated) {
-      const kpi = (kpisQ.data ?? []).find(k => k.id === kpi_id)
+    // Per KPI: akumulasi qty dari daily reports dalam PERIODE KALENDER KPI itu
+    // (bulan/minggu/hari berjalan — stabil, bukan rolling window yang bergeser tiap hari)
+    for (const kpiId of kpiIds) {
+      const kpi = (kpisQ.data ?? []).find(k => k.id === kpiId)
       if (!kpi) continue
+      const bounds = kpiPeriodBounds(kpi.period)
+      const accumulated = await fetchDailyKpiEntries(userId, bounds.start, bounds.end)
+      const qty = accumulated.find(e => e.kpi_id === kpiId)?.qty ?? 0
+      if (qty <= 0) continue
       const pct = (qty / kpi.target_value) * 100
       await upsertKpi.mutateAsync({
-        kpi_id,
+        kpi_id: kpiId,
         user_id: userId,
-        period_start: rangeStart,
-        period_end: rangeEnd,
+        period_start: bounds.start,
+        period_end: bounds.end,
         target_value: kpi.target_value,
         actual_value: qty,
         achievement_percentage: pct,
@@ -159,7 +176,7 @@ export default function DailyReportsPage() {
         input_type: 'automatic',
       })
     }
-  }, [userId, rangeStart, rangeEnd, kpisQ.data, upsertKpi])
+  }, [userId, kpisQ.data, upsertKpi])
 
   async function handleSubmit() {
     if (!plan && !done) return
@@ -198,11 +215,10 @@ export default function DailyReportsPage() {
     // Sync KPI jika ada entry
     if (validEntries.length > 0) {
       setSyncing(true)
-      try { await syncKpi() } finally { setSyncing(false) }
+      try { await syncKpi(validEntries.map(e => e.kpi_id)) } finally { setSyncing(false) }
     }
 
-    setPlan(''); setDone(''); setBlocker('')
-    setKpiEntries([{ kpi_id: '', qty: '' }])
+    // Form TIDAK direset — laporan hari ini bisa diedit lagi, isian tetap terlihat
     removeProof()
     setSubmitted(true)
     setTimeout(() => setSubmitted(false), 3000)

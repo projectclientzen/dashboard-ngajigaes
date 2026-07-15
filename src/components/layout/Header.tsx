@@ -52,28 +52,35 @@ const STATUS_COLOR: Record<string, string> = {
 export function Header() {
   const pathname  = usePathname()
   const router    = useRouter()
-  const { userId, userName, dateRange, setDateRange, customStart, customEnd, setCustomStart, setCustomEnd } = useApp()
+  const { userId, userName, isLeader, dateRange, setDateRange, customStart, customEnd, setCustomStart, setCustomEnd } = useApp()
   const [title, subtitle] = PAGE_TITLES[pathname] ?? ['Dashboard', '']
   const showPeriod = PERIOD_PAGES.has(pathname)
 
   const [notifOpen, setNotifOpen] = useState(false)
-  const notifRef = useRef<HTMLDivElement>(null)
+  // Ref TERPISAH untuk desktop & mobile — satu ref dipakai dua elemen membuat
+  // outside-click salah deteksi (klik item dropdown desktop dianggap "di luar")
+  const notifRefDesktop = useRef<HTMLDivElement>(null)
+  const notifRefMobile  = useRef<HTMLDivElement>(null)
 
   // Close dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false)
+      const t = e.target as Node
+      const insideDesktop = notifRefDesktop.current?.contains(t)
+      const insideMobile  = notifRefMobile.current?.contains(t)
+      if (!insideDesktop && !insideMobile) setNotifOpen(false)
     }
     if (notifOpen) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [notifOpen])
 
-  // Notif data: tasks assigned to user (todo/backlog/revision) + pending extra tasks
+  // Notif data: tasks assigned to user + extra tasks pending (leader: semua)
   const tasksQ = useTasks(undefined)
-  const extraQ = useExtraTasks(userId ?? undefined)
+  const extraQ = useExtraTasks(isLeader ? undefined : userId ?? undefined)
 
+  // Status "perlu dikerjakan" — HARUS sama dengan set di Sidebar agar badge konsisten
   const pendingTasks = (tasksQ.data ?? []).filter(t =>
-    t.assignee_id === userId && ['todo','backlog','revision','need_review'].includes(t.status)
+    t.assignee_id === userId && ['backlog','todo','in_progress','revision'].includes(t.status)
   ).slice(0, 5)
 
   const pendingExtra = (extraQ.data ?? []).filter(t => t.status === 'pending').slice(0, 3)
@@ -93,7 +100,7 @@ export function Header() {
   const bg = avatarBg(name)
 
   const NotifBell = ({ mobile = false }: { mobile?: boolean }) => (
-    <div ref={mobile ? undefined : notifRef} className="relative">
+    <div ref={mobile ? notifRefMobile : notifRefDesktop} className="relative">
       <button
         onClick={() => setNotifOpen(v => !v)}
         className={cn(
@@ -227,7 +234,7 @@ export function Header() {
               NgajiGaes<span className="text-[#C2795A]">.</span>
             </div>
           </div>
-          <div className="flex items-center gap-[10px]" ref={notifRef}>
+          <div className="flex items-center gap-[10px]">
             <NotifBell mobile />
             <div className="w-[34px] h-[34px] rounded-[9px] text-[#FCF8EC] flex items-center justify-center font-semibold text-[12px]"
               style={{ background: bg }}>

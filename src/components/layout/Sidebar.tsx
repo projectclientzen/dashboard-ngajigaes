@@ -99,12 +99,12 @@ export function Sidebar() {
   const qc = useQueryClient()
   const { userId, userRole, userName, isLoading, isLeader } = useApp()
 
-  // Badge data
+  // Badge data — status set HARUS sama dengan dropdown notif di Header
   const tasksQ  = useTasks(undefined)
-  const extraQ  = useExtraTasks(userId ?? undefined)
+  const extraQ  = useExtraTasks(isLeader ? undefined : userId ?? undefined)
 
   const pendingTasks = (tasksQ.data ?? []).filter(t =>
-    t.assignee_id === userId && ['todo','backlog','in_progress','revision'].includes(t.status)
+    t.assignee_id === userId && ['backlog','todo','in_progress','revision'].includes(t.status)
   ).length
 
   const pendingExtra = (extraQ.data ?? []).filter(t =>

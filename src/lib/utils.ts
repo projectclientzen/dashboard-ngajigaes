@@ -159,6 +159,19 @@ export function currentMonthRange(): { start: string; end: string } {
   }
 }
 
+/**
+ * Batas periode KPI berjalan (WIB) berdasarkan kpi.period.
+ * daily → hari ini; weekly → Senin-Minggu berjalan; monthly/custom → bulan kalender berjalan.
+ * Dipakai agar kpi_results selalu tersimpan pada periode kalender yang stabil,
+ * bukan rolling window yang bergeser tiap hari.
+ */
+export function kpiPeriodBounds(period: string): { start: string; end: string } {
+  const today = todayJakarta()
+  if (period === 'daily')  return { start: today, end: today }
+  if (period === 'weekly') return getWeekRange(today)
+  return currentMonthRange()
+}
+
 // ─── KPI CALCULATIONS ────────────────────────────────────────
 
 /**

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useContents, useCreateContent, useUpdateContent } from '@/lib/queries/contents'
 import { useAllUsers } from '@/lib/queries/daily-reports'
-import { formatDate } from '@/lib/utils'
+import { formatDate, todayJakarta } from '@/lib/utils'
 import type { ContentStatus, ContentFormat, ContentObjective, ValidationStatus, Content } from '@/types'
 
 const STATUS_META: Record<ContentStatus, { label: string; c: string; bg: string }> = {
@@ -210,8 +210,8 @@ export default function ContentCalendarPage() {
             {Array.from({ length: getDaysInMonth(calYear, calMonth) }).map((_, i) => {
               const day  = i + 1
               const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
-              const dayContents = contents.filter(c => c.publish_date?.startsWith(dateStr))
-              const isToday = dateStr === new Date().toISOString().split('T')[0]
+              const dayContents = filtered.filter(c => c.publish_date?.startsWith(dateStr))
+              const isToday = dateStr === todayJakarta()
               return (
                 <div key={day} className="border-r border-b border-[#F1ECDC] min-h-[80px] p-[4px]">
                   <div className={`text-[11px] font-semibold mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-[#5E7A5C] text-white' : 'text-[#7A766B]'}`}>

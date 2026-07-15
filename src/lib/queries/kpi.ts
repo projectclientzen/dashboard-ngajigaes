@@ -27,12 +27,13 @@ export function useKpiResults(userId: string, periodStart: string, periodEnd: st
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
+      // Overlap: periode result bersinggungan dengan range yang dipilih
       const { data, error } = await sb
         .from('kpi_results')
         .select('*, kpi:kpis(name)')
         .eq('user_id', userId)
-        .gte('period_start', periodStart)
-        .lte('period_end', periodEnd)
+        .lte('period_start', periodEnd)
+        .gte('period_end', periodStart)
         .order('created_at', { ascending: false }) as { data: RawRow[] | null; error: unknown }
 
       if (error) throw error
@@ -59,11 +60,12 @@ export function useAllKpiResults(periodStart: string, periodEnd: string) {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
+      // Overlap: periode result bersinggungan dengan range yang dipilih
       const { data, error } = await sb
         .from('kpi_results')
         .select('*, kpi:kpis(name)')
-        .gte('period_start', periodStart)
-        .lte('period_end', periodEnd)
+        .lte('period_start', periodEnd)
+        .gte('period_end', periodStart)
         .order('user_id') as { data: RawRow[] | null; error: unknown }
 
       if (error) throw error
