@@ -19,6 +19,7 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'approved',
     task_id: 'task-03',
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
   },
   {
     id: 'content-02',
@@ -38,6 +39,7 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: 'Tolong cek musik backgroundnya, harus bebas copyright',
     validation_status: 'waiting_validation',
     task_id: 'task-02',
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
   },
   {
     id: 'content-03',
@@ -57,6 +59,7 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'approved',
     task_id: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
   },
   {
     id: 'content-04',
@@ -76,6 +79,7 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'not_needed',
     task_id: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
   },
   {
     id: 'content-05',
@@ -95,6 +99,7 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'waiting_validation',
     task_id: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
   },
 ]
 

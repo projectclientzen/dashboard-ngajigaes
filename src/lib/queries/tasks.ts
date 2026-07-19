@@ -107,12 +107,28 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: async ({ id, ...fields }: {
       id: string
+      title?: string
+      description?: string | null
+      category?: string
+      assignee_id?: string
+      priority?: string
       result_link?: string | null
       deadline?: string | null
       status?: TaskStatus
       revision_notes?: string | null
     }) => {
       const { error } = await db().from('tasks').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  })
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db().from('tasks').delete().eq('id', id)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),

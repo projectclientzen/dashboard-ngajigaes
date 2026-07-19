@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useContents, useCreateContent, useUpdateContent } from '@/lib/queries/contents'
+import { useReplizAccounts, useScheduleToRepliz } from '@/lib/queries/repliz'
 import { useAllUsers } from '@/lib/queries/daily-reports'
 import { formatDate, todayJakarta } from '@/lib/utils'
 import type { ContentStatus, ContentFormat, ContentObjective, ValidationStatus, Content } from '@/types'
@@ -79,6 +80,23 @@ export default function ContentCalendarPage() {
   const [selected, setSelected] = useState<Content | null>(null)
   const [err, setErr] = useState('')
 
+  // Repliz scheduling
+  const replizAccountsQ = useReplizAccounts()
+  const scheduleRepliz  = useScheduleToRepliz()
+  const [replizAccountId, setReplizAccountId] = useState('')
+  const [replizMsg, setReplizMsg] = useState('')
+
+  async function handleScheduleRepliz() {
+    if (!selected || !replizAccountId) { setReplizMsg('Pilih akun tujuan dulu.'); return }
+    setReplizMsg('')
+    try {
+      await scheduleRepliz.mutateAsync({ content_id: selected.id, account_id: replizAccountId })
+      setReplizMsg('✓ Terjadwal di Repliz')
+    } catch (e) {
+      setReplizMsg(`Gagal: ${(e as Error).message}`)
+    }
+  }
+
   const [form, setForm] = useState({
     title: '', format: 'feed_single' as ContentFormat,
     objective: 'awareness' as ContentObjective,
@@ -99,6 +117,7 @@ export default function ContentCalendarPage() {
     // Non-leader: PIC default ke diri sendiri
     setForm({ title: '', format: 'feed_single', objective: 'awareness', status: 'idea', pic_id: isLeader ? '' : (userId ?? ''), theme: '', publish_date: '', caption: '', hook: '', cta: '', asset_link: '' })
     setErr('')
+    setReplizMsg(''); setReplizAccountId('')
     setShowDrawer(true)
   }
 
@@ -110,6 +129,7 @@ export default function ContentCalendarPage() {
       caption: c.caption ?? '', hook: c.hook ?? '', cta: c.cta ?? '', asset_link: c.asset_link ?? '',
     })
     setErr('')
+    setReplizMsg(''); setReplizAccountId('')
     setShowDrawer(true)
   }
 
@@ -373,6 +393,54 @@ export default function ContentCalendarPage() {
                   value={form.asset_link} onChange={e => setForm(f => ({ ...f, asset_link: e.target.value }))}/>
               </Field>
             </div>
+
+            {/* ── Repliz Scheduling (hanya untuk konten existing) ── */}
+            {selected && (
+              <div className="border border-[#E3DCC8] rounded-lg overflow-hidden">
+                <div className="px-3 py-[9px] bg-[#F8F4E8]">
+                  <div className="text-[12px] font-bold text-[#2B2A24]">Jadwalkan via Repliz</div>
+                  <div className="text-[11px] text-[#A89F86]">
+                    Post otomatis ke sosmed sesuai Tanggal Publish (butuh Link Asset berisi URL media)
+                  </div>
+                </div>
+                <div className="p-3 flex flex-col gap-2">
+                  {selected.repliz_schedule_id ? (
+                    <div className="text-[12px] text-[#5E8C61] bg-[#E9F3EA] rounded-md px-3 py-2">
+                      ✓ Sudah terjadwal · status: <b>{selected.repliz_status ?? 'scheduled'}</b>
+                      {(selected.likes ?? selected.comments ?? selected.shares) != null && (
+                        <span className="block mt-1 text-[#4F7CAC]">
+                          ❤️ {selected.likes ?? 0} · 💬 {selected.comments ?? 0} · 🔁 {selected.shares ?? 0}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <select className={inputCls} value={replizAccountId}
+                        onChange={e => setReplizAccountId(e.target.value)}>
+                        <option value="">
+                          {replizAccountsQ.isLoading ? 'Memuat akun...'
+                            : replizAccountsQ.isError ? 'Repliz belum dikonfigurasi'
+                            : 'Pilih akun tujuan...'}
+                        </option>
+                        {(replizAccountsQ.data ?? []).map(a => (
+                          <option key={a.id} value={a.id}>{a.platform ? `[${a.platform}] ` : ''}{a.name}</option>
+                        ))}
+                      </select>
+                      <button onClick={handleScheduleRepliz}
+                        disabled={scheduleRepliz.isPending || !replizAccountId}
+                        className="bg-[#4F7CAC] text-white border-none rounded-md py-[9px] text-[12px] font-semibold cursor-pointer hover:bg-[#3F6A9A] disabled:opacity-50 transition-colors">
+                        {scheduleRepliz.isPending ? 'Menjadwalkan...' : '📅 Jadwalkan ke Sosmed'}
+                      </button>
+                    </>
+                  )}
+                  {replizMsg && (
+                    <div className={`text-[11px] font-semibold ${replizMsg.startsWith('✓') ? 'text-[#5E8C61]' : 'text-[#B4452F]'}`}>
+                      {replizMsg}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {err && (
               <div className="text-[12px] text-[#B4452F] bg-[#F7E7E2] border border-[#EAC8BF] rounded-md px-3 py-[8px]">{err}</div>

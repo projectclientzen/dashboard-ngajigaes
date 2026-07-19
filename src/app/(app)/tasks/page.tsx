@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import { useTasks, useTaskComments, useUpdateTaskStatus, useUpdateTask, useCreateTask, useAddComment } from '@/lib/queries/tasks'
+import { useTasks, useTaskComments, useUpdateTaskStatus, useUpdateTask, useDeleteTask, useCreateTask, useAddComment } from '@/lib/queries/tasks'
 import { useAllUsers } from '@/lib/queries/daily-reports'
 import { cn, getInitials, formatDate } from '@/lib/utils'
 import type { Task, TaskStatus, Priority } from '@/types'
@@ -58,12 +58,21 @@ export default function TasksPage() {
   const usersQ     = useAllUsers()
   const updateStatus = useUpdateTaskStatus()
   const updateTask   = useUpdateTask()
+  const deleteTask   = useDeleteTask()
   const createTask   = useCreateTask()
   const addComment   = useAddComment()
 
   const [drawerResultLink, setDrawerResultLink] = useState('')
   const [drawerDeadline, setDrawerDeadline]     = useState('')
   const [savingLink, setSavingLink]             = useState(false)
+
+  // Edit mode di drawer (edit judul/deskripsi/kategori/PIC/prioritas)
+  const [editMode, setEditMode] = useState(false)
+  const [editForm, setEditForm] = useState({
+    title: '', description: '', category: 'Konten',
+    assignee_id: '', priority: 'medium' as Priority,
+  })
+  const [editErr, setEditErr] = useState('')
 
   const [view, setView]           = useState<'kanban' | 'table'>('kanban')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -107,6 +116,52 @@ export default function TasksPage() {
     if (!commentText.trim() || !selectedId || !userId) return
     await addComment.mutateAsync({ taskId: selectedId, userId, comment: commentText.trim() })
     setCommentText('')
+  }
+
+  // Buka drawer + set state edit/link/deadline dari task
+  function openTask(tk: Task) {
+    setSelectedId(tk.id)
+    setDrawerResultLink(tk.result_link ?? '')
+    setDrawerDeadline(tk.deadline?.split('T')[0] ?? '')
+    setEditMode(false)
+    setEditErr('')
+  }
+
+  function startEdit() {
+    if (!selected) return
+    setEditForm({
+      title: selected.title,
+      description: selected.description ?? '',
+      category: selected.category,
+      assignee_id: selected.assignee_id,
+      priority: selected.priority,
+    })
+    setEditErr('')
+    setEditMode(true)
+  }
+
+  async function handleSaveEdit() {
+    if (!selected) return
+    setEditErr('')
+    if (!editForm.title || !editForm.assignee_id) { setEditErr('Judul dan PIC wajib diisi.'); return }
+    try {
+      await updateTask.mutateAsync({
+        id: selected.id,
+        title: editForm.title,
+        description: editForm.description || null,
+        category: editForm.category,
+        assignee_id: editForm.assignee_id,
+        priority: editForm.priority,
+      })
+      setEditMode(false)
+    } catch (e) { setEditErr((e as Error).message) }
+  }
+
+  async function handleDeleteTask() {
+    if (!selected) return
+    if (!confirm(`Hapus task "${selected.title}"? Tindakan ini tidak bisa dibatalkan.`)) return
+    await deleteTask.mutateAsync(selected.id)
+    setSelectedId(null)
   }
 
   if (authLoading || tasksQ.isLoading) {
@@ -156,7 +211,7 @@ export default function TasksPage() {
                     <div key={tk.id} draggable
                       className="bg-white rounded-[7px] p-[11px_12px] cursor-pointer flex flex-col gap-2 shadow-sm"
                       style={{ border: `1px solid ${tk.is_overdue ? '#EAC8BF' : '#EBE5D4'}`, borderLeft: `3px solid ${col.color}` }}
-                      onClick={() => { setSelectedId(tk.id); setDrawerResultLink(tk.result_link ?? ''); setDrawerDeadline(tk.deadline?.split('T')[0] ?? '') }}
+                      onClick={() => openTask(tk)}
                       onDragStart={() => setDragId(tk.id)}>
                       <div className="text-[13px] font-semibold text-[#2B2A24] leading-[1.32]">{tk.title}</div>
                       <div className="flex items-center justify-between">
@@ -193,7 +248,7 @@ export default function TasksPage() {
             <tbody>
               {tasks.map(tk => (
                 <tr key={tk.id} className="border-t border-[#F1ECDC] cursor-pointer hover:bg-[#FDFAF3]"
-                  onClick={() => { setSelectedId(tk.id); setDrawerResultLink(tk.result_link ?? ''); setDrawerDeadline(tk.deadline?.split('T')[0] ?? '') }}>
+                  onClick={() => openTask(tk)}>
                   <td className="p-[11px_16px]">
                     <div className="font-semibold text-[#2B2A24]">{tk.title}</div>
                     <div className="text-[11px] text-[#A89F86]">{tk.category}</div>
@@ -293,8 +348,69 @@ export default function TasksPage() {
           <div className="absolute top-0 right-0 w-[430px] max-w-[92vw] h-full bg-[#FBF8EE] shadow-xl p-[22px] overflow-y-auto flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-[#8A8267] bg-[#EFEAD9] rounded-full px-[10px] py-[3px]">{selected.category}</span>
-              <button onClick={() => setSelectedId(null)} className="bg-none border-none cursor-pointer text-[#9A9279] text-[20px] leading-none">×</button>
+              <div className="flex items-center gap-2">
+                {!editMode && (
+                  <>
+                    <button onClick={startEdit}
+                      className="text-[12px] text-[#4F7CAC] font-semibold border-none bg-none cursor-pointer hover:underline">Edit</button>
+                    <button onClick={handleDeleteTask} disabled={deleteTask.isPending}
+                      className="text-[12px] text-[#B4452F] font-semibold border-none bg-none cursor-pointer hover:underline disabled:opacity-50">Hapus</button>
+                  </>
+                )}
+                <button onClick={() => { setSelectedId(null); setEditMode(false) }} className="bg-none border-none cursor-pointer text-[#9A9279] text-[20px] leading-none">×</button>
+              </div>
             </div>
+
+            {editMode ? (
+              /* ── Mode Edit ── */
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-[6px]">
+                  <label className="text-[11px] font-semibold text-[#5A574C]">Judul Task *</label>
+                  <input className={inputCls} value={editForm.title}
+                    onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}/>
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <label className="text-[11px] font-semibold text-[#5A574C]">Deskripsi</label>
+                  <textarea className={`${inputCls} resize-none`} rows={3} value={editForm.description}
+                    onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}/>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-semibold text-[#5A574C]">Kategori</label>
+                    <select className={inputCls} value={editForm.category}
+                      onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}>
+                      {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-semibold text-[#5A574C]">Prioritas</label>
+                    <select className={inputCls} value={editForm.priority}
+                      onChange={e => setEditForm(f => ({ ...f, priority: e.target.value as Priority }))}>
+                      <option value="low">Low</option><option value="medium">Medium</option>
+                      <option value="high">High</option><option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-[6px]">
+                  <label className="text-[11px] font-semibold text-[#5A574C]">PIC *</label>
+                  <select className={inputCls} value={editForm.assignee_id}
+                    onChange={e => setEditForm(f => ({ ...f, assignee_id: e.target.value }))}>
+                    <option value="">Pilih PIC...</option>
+                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  </select>
+                </div>
+                {editErr && <div className="text-[12px] text-[#B4452F] bg-[#F7E7E2] border border-[#EAC8BF] rounded-md px-3 py-2">{editErr}</div>}
+                <div className="flex gap-2">
+                  <button onClick={() => setEditMode(false)}
+                    className="flex-1 bg-[#EFEAD9] text-[#5A574C] border-none rounded-md py-[9px] text-[12px] font-semibold cursor-pointer">Batal</button>
+                  <button onClick={handleSaveEdit} disabled={updateTask.isPending}
+                    className="flex-1 bg-[#5E7A5C] text-white border-none rounded-md py-[9px] text-[12px] font-semibold cursor-pointer disabled:opacity-50">
+                    {updateTask.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
             <div className="text-[18px] font-bold text-[#2B2A24] leading-[1.3]">{selected.title}</div>
             <div className="flex gap-2"><StatusBadge s={selected.status}/><PrioBadge p={selected.priority}/></div>
             <div className="grid grid-cols-2 gap-[14px] p-[14px] bg-[#FCFAF2] border border-[#EFE9D8] rounded-lg">
@@ -324,13 +440,16 @@ export default function TasksPage() {
                 <div className="text-[13px] text-[#5A574C] leading-[1.55]">{selected.description}</div>
               </div>
             )}
-            {selected.revision_notes && (
+              </>
+            )}
+            {!editMode && selected.revision_notes && (
               <div className="p-3 bg-[#FBF4EC] border border-[#EFE2D2] rounded-lg">
                 <div className="text-[11px] font-semibold text-[#C77B3C] mb-1">Catatan Revisi</div>
                 <div className="text-[12px] text-[#5A574C]">{selected.revision_notes}</div>
               </div>
             )}
             {/* Fix #1: result_link editable */}
+            {!editMode && (
             <div className="flex flex-col gap-[6px]">
               <label className="text-[11px] font-semibold text-[#5A574C]">Link Progress / Hasil</label>
               <div className="flex gap-2">
@@ -353,6 +472,8 @@ export default function TasksPage() {
               </div>
               {savingLink && <span className="text-[11px] text-[#5E8C61]">Menyimpan...</span>}
             </div>
+            )}
+            {!editMode && (
             <div className="flex flex-col gap-[6px]">
               <label className="text-[11px] font-semibold text-[#5A574C]">Ubah Status</label>
               <select
@@ -364,6 +485,8 @@ export default function TasksPage() {
                 ))}
               </select>
             </div>
+            )}
+            {!editMode && (
             <div>
               <div className="text-[12px] font-semibold text-[#5A574C] mb-[10px]">Komentar</div>
               <div className="flex flex-col gap-3 mb-3">
@@ -396,6 +519,7 @@ export default function TasksPage() {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

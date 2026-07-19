@@ -40,6 +40,11 @@ export function useContents(start?: string, end?: string) {
         curator_notes: c.curator_notes as string | null,
         validation_status: c.validation_status as ValidationStatus,
         task_id: c.task_id as string | null,
+        repliz_schedule_id: (c.repliz_schedule_id as string | null) ?? null,
+        repliz_status: (c.repliz_status as string | null) ?? null,
+        likes: (c.likes as number | null) ?? null,
+        comments: (c.comments as number | null) ?? null,
+        shares: (c.shares as number | null) ?? null,
       }))
     },
   })

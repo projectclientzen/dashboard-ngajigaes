@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import { useDailyReports, useUpsertDailyReport } from '@/lib/queries/daily-reports'
+import { useDailyReports, useUpsertDailyReport, useDeleteDailyReport } from '@/lib/queries/daily-reports'
 import { useKpis, useUpsertKpiResult, fetchDailyKpiEntries } from '@/lib/queries/kpi'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials, todayJakarta, formatDate, kpiPeriodBounds } from '@/lib/utils'
@@ -79,6 +79,7 @@ export default function DailyReportsPage() {
   const reportsQ  = useDailyReports(today, isLeader ? undefined : userId ?? undefined)
   const kpisQ     = useKpis()
   const upsert    = useUpsertDailyReport()
+  const deleteReport = useDeleteDailyReport()
   const upsertKpi = useUpsertKpiResult()
 
   const [plan, setPlan]       = useState('')
@@ -141,6 +142,16 @@ export default function DailyReportsPage() {
   const myKpis: Kpi[] = (kpisQ.data ?? []).filter(
     k => k.user_id === userId || k.user_id === null
   )
+
+  async function handleDeleteReport() {
+    if (!myTodayReport) return
+    if (!confirm('Hapus laporan hari ini? Kamu bisa buat ulang setelahnya.')) return
+    await deleteReport.mutateAsync(myTodayReport.id)
+    setPlan(''); setDone(''); setBlocker('')
+    setKpiEntries([{ kpi_id: '', qty: '' }])
+    setPrefilledId(null)
+    removeProof()
+  }
 
   function addKpiRow() {
     setKpiEntries(prev => [...prev, { kpi_id: '', qty: '' }])
@@ -236,8 +247,15 @@ export default function DailyReportsPage() {
 
         {/* Form laporan */}
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-[18px]">
-          <div className="text-[13px] font-bold text-[#2B2A24] mb-[3px]">Laporan Hari Ini · {formatDate(today, 'd MMM yyyy')}</div>
-          <div className="text-[12px] text-[#A89F86] mb-4">Satu laporan per hari, bisa diedit di hari yang sama.</div>
+          <div className="flex items-center justify-between mb-[3px]">
+            <div className="text-[13px] font-bold text-[#2B2A24]">Laporan Hari Ini · {formatDate(today, 'd MMM yyyy')}</div>
+            {myTodayReport && (
+              <span className="text-[10px] font-semibold text-[#4F7CAC] bg-[#E8F0F6] rounded-full px-[9px] py-[3px]">✏️ Mode Edit</span>
+            )}
+          </div>
+          <div className="text-[12px] text-[#A89F86] mb-4">
+            {myTodayReport ? 'Laporan sudah ada — ubah isinya lalu simpan untuk memperbarui.' : 'Satu laporan per hari, bisa diedit di hari yang sama.'}
+          </div>
 
           <label className="text-[12px] font-semibold text-[#5A574C]">Rencana hari ini</label>
           <textarea className={taClass} placeholder="Apa yang akan dikerjakan hari ini?" value={plan}
@@ -343,8 +361,14 @@ export default function DailyReportsPage() {
           <div className="flex items-center gap-3">
             <button onClick={handleSubmit} disabled={upsert.isPending || syncing || uploading}
               className="bg-[#5E7A5C] text-white border-none rounded-md px-5 py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors disabled:opacity-60">
-              {uploading ? 'Upload bukti...' : syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : 'Kirim Laporan'}
+              {uploading ? 'Upload bukti...' : syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : myTodayReport ? 'Simpan Perubahan' : 'Kirim Laporan'}
             </button>
+            {myTodayReport && (
+              <button onClick={handleDeleteReport} disabled={deleteReport.isPending}
+                className="bg-white border border-[#EAC8BF] text-[#B4452F] rounded-md px-4 py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#F7E7E2] transition-colors disabled:opacity-60">
+                {deleteReport.isPending ? 'Menghapus...' : 'Hapus'}
+              </button>
+            )}
             {submitted && <span className="text-[12px] font-semibold text-[#5E8C61]">✓ Laporan & KPI tersimpan</span>}
           </div>
         </div>

@@ -81,3 +81,14 @@ export function useUpsertDailyReport() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['daily-reports'] }),
   })
 }
+
+export function useDeleteDailyReport() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db().from('daily_reports').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['daily-reports'] }),
+  })
+}

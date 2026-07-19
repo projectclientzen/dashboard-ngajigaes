@@ -209,6 +209,12 @@ export interface Content {
   curator_notes: string | null
   validation_status: ValidationStatus
   task_id: string | null
+  // Repliz integration (nullable — terisi setelah dijadwalkan via Repliz)
+  repliz_schedule_id: string | null
+  repliz_status: string | null
+  likes: number | null
+  comments: number | null
+  shares: number | null
 }
 
 export interface AccountInsight {
