@@ -34,13 +34,15 @@ export function useUser() {
 
       if (pErr || !profile) return null
 
-      // Ambil nama role
+      // Ambil nama role — error di sini harus retry, bukan diam-diam
+      // fallback ke role member (leader bisa kehilangan menu)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: roleData } = await (supabase as any)
+      const { data: roleData, error: rErr } = await (supabase as any)
         .from('roles')
         .select('name')
         .eq('id', profile.role_id)
-        .single() as { data: { name: string } | null }
+        .single() as { data: { name: string } | null; error: unknown }
+      if (rErr) throw rErr
 
       return {
         id: profile.id,

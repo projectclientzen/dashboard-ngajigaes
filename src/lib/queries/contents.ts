@@ -54,8 +54,8 @@ export function useCreateContent() {
       objective: ContentObjective
       status: ContentStatus
       pic_id: string
-      theme?: string
-      publish_date?: string
+      theme?: string | null
+      publish_date?: string | null
       caption?: string
       hook?: string
       cta?: string

@@ -48,9 +48,8 @@ const LEADER_MORE = [
 
 const MEMBER_MORE = [
   { href: '/my-performance',    label: 'Performa Saya',    hint: 'Skor & posisi',      icon: 'perf' },
-  { href: '/content-calendar',  label: 'Konten Saya',      hint: 'Konten kamu',        icon: 'calendar' },
+  { href: '/content-calendar',  label: 'Konten Saya',      hint: 'Konten & jadwal',    icon: 'calendar' },
   { href: '/instagram-insight', label: 'Instagram Insight',hint: 'Performa akun',      icon: 'insight' },
-  { href: '/content-calendar',  label: 'Content Calendar', hint: 'Jadwal konten',      icon: 'calendar' },
   { href: '/extra-tasks',       label: 'Tugas Tambahan',   hint: 'Dari Leader',        icon: 'extra' },
 ]
 

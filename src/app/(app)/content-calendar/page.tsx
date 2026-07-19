@@ -63,8 +63,10 @@ const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','
 const DAYS_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
 
 export default function ContentCalendarPage() {
-  const { userId, isLeader, rangeStart, rangeEnd } = useApp()
-  const contentsQ = useContents(rangeStart, rangeEnd)
+  const { userId, isLeader } = useApp()
+  // Tanpa filter range — kalender konten harus menampilkan konten masa depan
+  // dan konten tanpa tanggal publish (range filter menyembunyikan keduanya)
+  const contentsQ = useContents()
   const usersQ = useAllUsers()
   const createContent = useCreateContent()
   const updateContent = useUpdateContent()
@@ -121,8 +123,8 @@ export default function ContentCalendarPage() {
         objective: form.objective,
         status: form.status,
         pic_id: form.pic_id,
-        ...(form.theme && { theme: form.theme }),
-        ...(form.publish_date && { publish_date: form.publish_date }),
+        theme: form.theme || null,
+        publish_date: form.publish_date || null,
         ...(form.caption && { caption: form.caption }),
         ...(form.hook && { hook: form.hook }),
         ...(form.cta && { cta: form.cta }),
