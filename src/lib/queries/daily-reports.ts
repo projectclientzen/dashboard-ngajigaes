@@ -36,6 +36,7 @@ export function useDailyReports(date?: string, userId?: string) {
         work_link: r.work_link as string | null,
         proof_url: r.proof_url as string | null,
         kpi_entries: (r.kpi_entries as { kpi_id: string; qty: number }[] | null) ?? [],
+        created_at: r.created_at as string,
       })) as DailyReport[]
     },
   })
@@ -73,9 +74,8 @@ export function useUpsertDailyReport() {
       proof_url?: string
       kpi_entries?: { kpi_id: string; qty: number }[]
     }) => {
-      const { error } = await db()
-        .from('daily_reports')
-        .upsert(report, { onConflict: 'user_id,report_date' })
+      // INSERT (bukan upsert) — tiap submit = entri baru yang menumpuk dalam hari yang sama
+      const { error } = await db().from('daily_reports').insert(report)
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['daily-reports'] }),

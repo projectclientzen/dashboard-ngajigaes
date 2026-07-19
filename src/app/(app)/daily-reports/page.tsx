@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useDailyReports, useUpsertDailyReport, useDeleteDailyReport } from '@/lib/queries/daily-reports'
 import { useKpis, useUpsertKpiResult, fetchDailyKpiEntries } from '@/lib/queries/kpi'
@@ -124,33 +124,15 @@ export default function DailyReportsPage() {
   // KPI entries — list pasangan kpi_id + qty (optional)
   const [kpiEntries, setKpiEntries] = useState<KpiEntry[]>([{ kpi_id: '', qty: '' }])
 
-  // Prefill form dari laporan hari ini yang sudah ada (satu kali per laporan)
-  const [prefilledId, setPrefilledId] = useState<string | null>(null)
-  const myTodayReport = (reportsQ.data ?? []).find(r => r.user_id === userId)
-  useEffect(() => {
-    if (!myTodayReport || myTodayReport.id === prefilledId) return
-    setPlan(myTodayReport.plan_today ?? '')
-    setDone(myTodayReport.completed_work ?? '')
-    setBlocker(myTodayReport.blockers ?? '')
-    if (myTodayReport.kpi_entries.length > 0) {
-      setKpiEntries(myTodayReport.kpi_entries.map(e => ({ kpi_id: e.kpi_id, qty: String(e.qty) })))
-    }
-    setPrefilledId(myTodayReport.id)
-  }, [myTodayReport, prefilledId])
-
   // KPI yang relevan untuk user ini (global atau assigned)
   const myKpis: Kpi[] = (kpisQ.data ?? []).filter(
     k => k.user_id === userId || k.user_id === null
   )
 
-  async function handleDeleteReport() {
-    if (!myTodayReport) return
-    if (!confirm('Hapus laporan hari ini? Kamu bisa buat ulang setelahnya.')) return
-    await deleteReport.mutateAsync(myTodayReport.id)
-    setPlan(''); setDone(''); setBlocker('')
-    setKpiEntries([{ kpi_id: '', qty: '' }])
-    setPrefilledId(null)
-    removeProof()
+  // Hapus satu entri laporan (dari daftar/tabel)
+  async function handleDeleteReport(id: string) {
+    if (!confirm('Hapus entri laporan ini?')) return
+    await deleteReport.mutateAsync(id)
   }
 
   function addKpiRow() {
@@ -229,7 +211,9 @@ export default function DailyReportsPage() {
       try { await syncKpi(validEntries.map(e => e.kpi_id)) } finally { setSyncing(false) }
     }
 
-    // Form TIDAK direset — laporan hari ini bisa diedit lagi, isian tetap terlihat
+    // Reset form — tiap submit adalah entri baru, siap untuk laporan berikutnya
+    setPlan(''); setDone(''); setBlocker('')
+    setKpiEntries([{ kpi_id: '', qty: '' }])
     removeProof()
     setSubmitted(true)
     setTimeout(() => setSubmitted(false), 3000)
@@ -247,15 +231,8 @@ export default function DailyReportsPage() {
 
         {/* Form laporan */}
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-[18px]">
-          <div className="flex items-center justify-between mb-[3px]">
-            <div className="text-[13px] font-bold text-[#2B2A24]">Laporan Hari Ini · {formatDate(today, 'd MMM yyyy')}</div>
-            {myTodayReport && (
-              <span className="text-[10px] font-semibold text-[#4F7CAC] bg-[#E8F0F6] rounded-full px-[9px] py-[3px]">✏️ Mode Edit</span>
-            )}
-          </div>
-          <div className="text-[12px] text-[#A89F86] mb-4">
-            {myTodayReport ? 'Laporan sudah ada — ubah isinya lalu simpan untuk memperbarui.' : 'Satu laporan per hari, bisa diedit di hari yang sama.'}
-          </div>
+          <div className="text-[13px] font-bold text-[#2B2A24] mb-[3px]">Buat Laporan · {formatDate(today, 'd MMM yyyy')}</div>
+          <div className="text-[12px] text-[#A89F86] mb-4">Bisa isi beberapa kali sehari — tiap kirim jadi entri baru yang menumpuk.</div>
 
           <label className="text-[12px] font-semibold text-[#5A574C]">Rencana hari ini</label>
           <textarea className={taClass} placeholder="Apa yang akan dikerjakan hari ini?" value={plan}
@@ -361,21 +338,15 @@ export default function DailyReportsPage() {
           <div className="flex items-center gap-3">
             <button onClick={handleSubmit} disabled={upsert.isPending || syncing || uploading}
               className="bg-[#5E7A5C] text-white border-none rounded-md px-5 py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors disabled:opacity-60">
-              {uploading ? 'Upload bukti...' : syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : myTodayReport ? 'Simpan Perubahan' : 'Kirim Laporan'}
+              {uploading ? 'Upload bukti...' : syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : '+ Tambah Laporan'}
             </button>
-            {myTodayReport && (
-              <button onClick={handleDeleteReport} disabled={deleteReport.isPending}
-                className="bg-white border border-[#EAC8BF] text-[#B4452F] rounded-md px-4 py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#F7E7E2] transition-colors disabled:opacity-60">
-                {deleteReport.isPending ? 'Menghapus...' : 'Hapus'}
-              </button>
-            )}
-            {submitted && <span className="text-[12px] font-semibold text-[#5E8C61]">✓ Laporan & KPI tersimpan</span>}
+            {submitted && <span className="text-[12px] font-semibold text-[#5E8C61]">✓ Laporan tersimpan</span>}
           </div>
         </div>
 
         {/* Panel kanan — laporan hari ini */}
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-[18px]">
-          <div className="text-[13px] font-bold text-[#2B2A24] mb-[14px]">Laporan Hari Ini</div>
+          <div className="text-[13px] font-bold text-[#2B2A24] mb-[14px]">Laporan Hari Ini ({reports.length})</div>
           {reportsQ.isLoading ? (
             <div className="text-[13px] text-[#A89F86]">Memuat...</div>
           ) : reports.length === 0 ? (
@@ -408,7 +379,9 @@ export default function DailyReportsPage() {
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] font-semibold text-[#5E8C61] bg-[#E9F1E6] rounded-full px-2 py-0.5">✓</span>
+                  <span className="text-[10px] font-semibold text-[#7A766B] whitespace-nowrap">
+                    {new Date(r.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
+                  </span>
                 </div>
               ))}
             </div>
@@ -424,14 +397,14 @@ export default function DailyReportsPage() {
         <table className="w-full border-collapse text-[12.5px]">
           <thead>
             <tr className="bg-[#FBF6E9]">
-              {['ANGGOTA','RENCANA','SELESAI','BLOCKER','KPI HARI INI','BUKTI'].map(h => (
-                <th key={h} className="p-[10px_16px] text-left text-[10px] font-semibold text-[#9A9279]">{h}</th>
+              {['ANGGOTA','JAM','RENCANA','SELESAI','BLOCKER','KPI HARI INI','BUKTI',''].map((h, i) => (
+                <th key={i} className="p-[10px_16px] text-left text-[10px] font-semibold text-[#9A9279]">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {reports.length === 0 && (
-              <tr><td colSpan={6} className="p-6 text-center text-[13px] text-[#A89F86]">Belum ada laporan.</td></tr>
+              <tr><td colSpan={8} className="p-6 text-center text-[13px] text-[#A89F86]">Belum ada laporan.</td></tr>
             )}
             {reports.map(r => (
               <tr key={r.id} className="border-t border-[#F1ECDC] align-top">
@@ -446,6 +419,9 @@ export default function DailyReportsPage() {
                       <div className="text-[10px] text-[#A89F86]">{formatDate(r.report_date, 'd MMM')}</div>
                     </div>
                   </div>
+                </td>
+                <td className="p-[12px_16px] text-[#7A766B] whitespace-nowrap">
+                  {new Date(r.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })}
                 </td>
                 <td className="p-[12px_16px] text-[#5A574C] max-w-[180px]">{r.plan_today ?? '—'}</td>
                 <td className="p-[12px_16px] text-[#5A574C] max-w-[180px]">{r.completed_work ?? '—'}</td>
@@ -477,6 +453,14 @@ export default function DailyReportsPage() {
                     </a>
                   ) : (
                     <span className="text-[#B0A78C]">—</span>
+                  )}
+                </td>
+                <td className="p-[12px_16px]">
+                  {(r.user_id === userId || isLeader) && (
+                    <button onClick={() => handleDeleteReport(r.id)} disabled={deleteReport.isPending}
+                      className="text-[11px] text-[#B4452F] font-semibold border-none bg-none cursor-pointer hover:underline disabled:opacity-50">
+                      Hapus
+                    </button>
                   )}
                 </td>
               </tr>

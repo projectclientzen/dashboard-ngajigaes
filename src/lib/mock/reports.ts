@@ -18,6 +18,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     work_link: 'https://notion.so/example',
     proof_url: null,
     kpi_entries: [],
+    created_at: '2026-06-26T08:00:00Z',
   },
   {
     id: 'report-02',
@@ -33,6 +34,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     work_link: 'https://drive.google.com/example',
     proof_url: null,
     kpi_entries: [],
+    created_at: '2026-06-26T08:00:00Z',
   },
   {
     id: 'report-03',
@@ -48,6 +50,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     work_link: 'https://notion.so/example',
     proof_url: null,
     kpi_entries: [],
+    created_at: '2026-06-26T08:00:00Z',
   },
 ]
 

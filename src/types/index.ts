@@ -148,6 +148,7 @@ export interface DailyReport {
   work_link: string | null
   proof_url: string | null
   kpi_entries: { kpi_id: string; qty: number }[]
+  created_at: string
 }
 
 export interface Kpi {
