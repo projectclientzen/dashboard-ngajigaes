@@ -21,7 +21,7 @@ function MetricCard({ label, value, sub }: { label:string; value:string; sub:str
 }
 
 export default function SalesPage() {
-  const { userRole, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
+  const { userRole, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, requireBrandId, brands } = useApp()
   const canFinancial = canViewFinancial(userRole)
 
   const salesQ   = useSalesRecords(rangeStart, rangeEnd, brandId)
@@ -83,6 +83,15 @@ export default function SalesPage() {
   const prodEntries = Object.entries(byProduct).sort((a, b) => b[1] - a[1])
   const prodMax = Math.max(...prodEntries.map(e => e[1]), 1)
 
+  // AGG-4: omzet per brand — hanya saat mode "Semua Brand" (halaman ini leader-only → canFinancial true)
+  const byBrand = isAllBrands
+    ? brands.map(b => ({ brand: b, gross: sales.filter(s => s.brand_id === b.id).reduce((a, s) => a + s.gross_revenue, 0) }))
+        .filter(x => x.gross > 0)
+        .sort((a, b) => b.gross - a.gross)
+    : []
+  const brandMax = Math.max(...byBrand.map(b => b.gross), 1)
+  const brandById: Record<string, typeof brands[0]> = Object.fromEntries(brands.map(b => [b.id, b]))
+
   return (
     <div className="flex flex-col gap-[14px]">
       <div className="grid grid-cols-4 gap-[14px]">
@@ -102,6 +111,29 @@ export default function SalesPage() {
           </>
         )}
       </div>
+
+      {/* AGG-4: Omzet per brand (mode Semua Brand) */}
+      {isAllBrands && byBrand.length > 0 && (
+        <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
+          <div className="text-[13px] font-bold text-[#2B2A24] mb-[14px]">Omzet / Brand</div>
+          <div className="flex flex-col gap-[13px]">
+            {byBrand.map(({ brand, gross }) => (
+              <div key={brand.id}>
+                <div className="flex justify-between text-[12px] mb-[5px]">
+                  <span className="flex items-center gap-[6px] text-[#5A574C] font-medium">
+                    <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: brand.color }}/>
+                    {brand.name}
+                  </span>
+                  <span className="font-bold text-[#2B2A24]">{formatRupiah(gross, true)}</span>
+                </div>
+                <div className="h-[18px] bg-[#F0EBDA] rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width:`${(gross/brandMax)*100}%`, background: brand.color }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Product bar chart */}
       {prodEntries.length > 0 && (
@@ -157,7 +189,15 @@ export default function SalesPage() {
               ? sales.map(r => (
                 <tr key={r.id} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]">
                   <td className="p-[11px_14px] text-[#7A766B]">{formatDate(r.sales_date, 'd MMM')}</td>
-                  <td className="p-[11px_14px] font-semibold text-[#2B2A24]">{r.product_name}</td>
+                  <td className="p-[11px_14px]">
+                    <div className="font-semibold text-[#2B2A24]">{r.product_name}</div>
+                    {isAllBrands && brandById[r.brand_id] && (
+                      <span className="inline-flex items-center gap-1 text-[10px] text-[#8A8267] mt-[1px]">
+                        <span className="w-[6px] h-[6px] rounded-full" style={{ background: brandById[r.brand_id].color }}/>
+                        {brandById[r.brand_id].name}
+                      </span>
+                    )}
+                  </td>
                   <td className="p-[11px_14px] text-center text-[#5A574C]">{r.order_count}</td>
                   <td className="p-[11px_14px] text-center text-[#5A574C]">{r.quantity}</td>
                   <td className="p-[11px_14px] text-right text-[#5A574C]">{formatRupiah(r.gross_revenue)}</td>

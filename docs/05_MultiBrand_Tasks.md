@@ -52,7 +52,7 @@ Track: **FND** foundation, **CTX** context+switcher, **MOD** module wiring, **AG
 - [x] **CTX-2 Guard brand konkret** Helper `requireBrandId()` → lempar/return null saat `'all'`. Dipakai halaman create. Cek: create diblok saat "Semua Brand".
 - [x] **CTX-3 BrandSwitcher komponen** Dropdown di Header (desktop) + Header mobile. Isi: "Semua Brand" + tiap brand (warna + nama). Ganti brand → update context. Cek: pilih brand → context berubah.
 - [x] **CTX-4 Badge brand di sidebar** Tampilkan brand aktif di bawah logo (nama + warna) biar konteks jelas. Cek: brand aktif kelihatan.
-- [ ] **CTX-5 Reset query saat ganti brand** Pastikan react-query key semua modul menyertakan `brandId` → auto refetch saat switch. Cek: ganti brand → data ikut ganti. *(in progress — `contents.ts`, `tasks.ts`, `daily-reports.ts` sudah; sisanya lihat MOD)*
+- [x] **CTX-5 Reset query saat ganti brand** Pastikan react-query key semua modul menyertakan `brandId` → auto refetch saat switch. Cek: ganti brand → data ikut ganti. *(semua query file MOD sudah menyertakan brandId di queryKey)*
 
 ---
 
@@ -60,37 +60,37 @@ Track: **FND** foundation, **CTX** context+switcher, **MOD** module wiring, **AG
 
 Pola tiap modul: (a) query list `.eq('brand_id', brandId)` kecuali mode 'all'; (b) mutation create meng-attach `brand_id`; (c) queryKey menyertakan `brandId`.
 
-- [ ] **MOD-1 Tasks** Filter + attach brand di `queries/tasks.ts`. Create task set `brand_id`. Kanban/tabel per brand. Cek: task brand A tak muncul di brand B.
-- [ ] **MOD-2 Contents** Filter + attach di `queries/contents.ts`. Create konten set brand. Kalender per brand. Cek: konten terisolasi per brand.
-- [ ] **MOD-3 Daily Reports** Filter + attach di `queries/daily-reports.ts`. Insert laporan set brand. Cek: laporan per brand terpisah.
-- [ ] **MOD-4 Extra Tasks** Filter + attach di `queries/extra-tasks.ts` + `extra_tasks_view` (tambah brand_id ke view). Cek: tugas tambahan per brand.
-- [ ] **MOD-5 KPI + Results** Filter + attach `queries/kpi.ts`. KPI, kpi_results, sync dari daily ikut brand. `kpiPeriodBounds` tetap; tambah dimensi brand di upsert. Cek: KPI brand A tak tercampur brand B.
-- [ ] **MOD-6 Productivity Scores** Filter + attach. Skor dihitung per brand. Cek: skor per brand benar.
-- [ ] **MOD-7 Products** Filter + attach `queries/sales.ts` (produk). Produk per brand. Cek: katalog per brand.
-- [ ] **MOD-8 Sales Records** Filter + attach. Omzet per brand. `resolveProductId`/entry manual set brand. Cek: omzet per brand benar.
-- [ ] **MOD-9 Instagram Insights** Filter + attach account + content insights `queries/instagram.ts`. Cek: insight per brand.
-- [ ] **MOD-10 Weekly Review + Action Plans** Filter + attach. Review mingguan per brand. Cek: review per brand.
-- [ ] **MOD-11 Sidebar/Nav badge count** Badge tugas/tugas-tambahan di sidebar ikut brand aktif (atau total saat 'all'). Cek: badge sesuai brand.
+- [x] **MOD-1 Tasks** Filter + attach brand di `queries/tasks.ts`. Create task set `brand_id`. Kanban/tabel per brand. Cek: task brand A tak muncul di brand B.
+- [x] **MOD-2 Contents** Filter + attach di `queries/contents.ts`. Create konten set brand. Kalender per brand. Cek: konten terisolasi per brand.
+- [x] **MOD-3 Daily Reports** Filter + attach di `queries/daily-reports.ts`. Insert laporan set brand. Cek: laporan per brand terpisah.
+- [x] **MOD-4 Extra Tasks** Filter + attach di `queries/extra-tasks.ts` + `extra_tasks_view` (tambah brand_id ke view). Cek: tugas tambahan per brand.
+- [x] **MOD-5 KPI + Results** Filter + attach `queries/kpi.ts`. KPI, kpi_results, sync dari daily ikut brand. `kpiPeriodBounds` tetap; tambah dimensi brand di upsert. Cek: KPI brand A tak tercampur brand B.
+- [x] **MOD-6 Productivity Scores** Filter + attach. Skor dihitung per brand. Cek: skor per brand benar.
+- [x] **MOD-7 Products** Filter + attach `queries/sales.ts` (produk). Produk per brand. Cek: katalog per brand.
+- [x] **MOD-8 Sales Records** Filter + attach. Omzet per brand. `resolveProductId`/entry manual set brand. Cek: omzet per brand benar.
+- [x] **MOD-9 Instagram Insights** Filter + attach account + content insights `queries/instagram.ts`. Cek: insight per brand.
+- [x] **MOD-10 Weekly Review + Action Plans** Filter + attach. Review mingguan per brand. Cek: review per brand.
+- [x] **MOD-11 Sidebar/Nav badge count** Badge tugas/tugas-tambahan di sidebar ikut brand aktif (atau total saat 'all'). Cek: badge sesuai brand.
 
 ---
 
 ## Sprint 3 — Aggregate Dashboard (AGG)
 
-- [ ] **AGG-1 Query agregat lintas brand** Saat `brandId === 'all'`, query tanpa filter brand + sertakan kolom brand untuk grouping. Cek: data semua brand kebaca.
-- [ ] **AGG-2 Dashboard "Semua Brand"** Kartu ringkasan per brand (omzet, task, KPI) + total gabungan. Cek: angka per brand + total benar.
-- [ ] **AGG-3 Team Performance lintas brand** Mode 'all' tampilkan skor gabungan + breakdown per brand. Cek: ranking benar.
-- [ ] **AGG-4 Omzet lintas brand** Grafik omzet dengan seri per brand saat 'all'. Cek: seri benar.
-- [ ] **AGG-5 Label brand di list agregat** Tiap baris di mode 'all' diberi chip warna brand. Cek: mudah dibedakan.
+- [x] **AGG-1 Query agregat lintas brand** Saat `brandId === 'all'`, query tanpa filter brand + sertakan kolom brand untuk grouping. Cek: data semua brand kebaca.
+- [x] **AGG-2 Dashboard "Semua Brand"** Kartu ringkasan per brand (omzet, task, KPI) + total gabungan. Cek: angka per brand + total benar. *(section baru di `dashboard/page.tsx` `LeaderDashboard`)*
+- [x] **AGG-3 Team Performance lintas brand** Mode 'all' tampilkan skor gabungan + breakdown per brand. Cek: ranking benar. *(chip brand per baris di `team-performance/page.tsx`)*
+- [x] **AGG-4 Omzet lintas brand** Grafik omzet dengan seri per brand saat 'all'. Cek: seri benar. *(bar breakdown "Omzet / Brand" di `sales/page.tsx`)*
+- [x] **AGG-5 Label brand di list agregat** Tiap baris di mode 'all' diberi chip warna brand. Cek: mudah dibedakan. *(sales table + team-performance)*
 
 ---
 
 ## Sprint 4 — Brand Management (ADM)
 
-- [ ] **ADM-1 Settings: daftar brands** Section baru di `/settings` (leader-only): tabel brand + status. Cek: tampil.
-- [ ] **ADM-2 Tambah brand** Form: nama, slug (auto dari nama), warna, logo (opsional). Cek: brand baru muncul di switcher.
-- [ ] **ADM-3 Edit brand** Ubah nama/warna/status. Cek: perubahan refleksi di switcher.
-- [ ] **ADM-4 Nonaktifkan brand** Soft-delete (status=inactive) — hilang dari switcher, data tetap. Cek: brand inactive tak muncul.
-- [ ] **ADM-5 Guard slug unik** Tolak slug duplikat dengan pesan jelas. Cek: duplikat ditolak.
+- [x] **ADM-1 Settings: daftar brands** Section baru di `/settings` (leader-only): tabel brand + status. Cek: tampil. *(tab "Brand" baru di `settings/page.tsx`, pakai `useAllBrands`)*
+- [x] **ADM-2 Tambah brand** Form: nama, slug (auto dari nama), warna, logo (opsional). Cek: brand baru muncul di switcher.
+- [x] **ADM-3 Edit brand** Ubah nama/warna/status. Cek: perubahan refleksi di switcher.
+- [x] **ADM-4 Nonaktifkan brand** Soft-delete (status=inactive) — hilang dari switcher, data tetap. Cek: brand inactive tak muncul. *(toggle Aktifkan/Nonaktifkan di tabel)*
+- [x] **ADM-5 Guard slug unik** Tolak slug duplikat dengan pesan jelas. Cek: duplikat ditolak. *(cek client-side case-insensitive + fallback pesan dari DB unique constraint)*
 
 ---
 

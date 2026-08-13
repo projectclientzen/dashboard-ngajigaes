@@ -3,12 +3,13 @@
 import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useProducts } from '@/lib/queries/sales'
+import { useAllBrands, useCreateBrand, useUpdateBrand } from '@/lib/queries/brands'
 import {
   useTeamUsers, useRoles, useCreateUser, useDeactivateUser,
   useCreateProduct, useUpdateProduct, useScoreSettingsData, useUpdateScoreSettings,
 } from '@/lib/queries/settings'
 import { formatRupiah } from '@/lib/utils'
-import type { Role, ProductType } from '@/types'
+import type { ProductType } from '@/types'
 
 const ROLE_LABEL: Record<string, string> = {
   leader: 'Leader',
@@ -426,11 +427,177 @@ function ScoreTab() {
   )
 }
 
+// ─── BRANDS TAB (ADM) ─────────────────────────────────────────
+function slugify(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+}
+
+function BrandsTab() {
+  const brandsQ = useAllBrands()
+  const createBrand = useCreateBrand()
+  const updateBrand = useUpdateBrand()
+
+  const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<string | null>(null)
+  const [slugTouched, setSlugTouched] = useState(false)
+  const [form, setForm] = useState({ name: '', slug: '', color: '#5E7A5C', logo_url: '', status: 'active' as 'active' | 'inactive' })
+  const [err, setErr] = useState('')
+
+  const brands = brandsQ.data ?? []
+
+  function openNew() {
+    setEditing(null)
+    setSlugTouched(false)
+    setForm({ name: '', slug: '', color: '#5E7A5C', logo_url: '', status: 'active' })
+    setErr('')
+    setShowModal(true)
+  }
+
+  function openEdit(b: typeof brands[0]) {
+    setEditing(b.id)
+    setSlugTouched(true)
+    setForm({ name: b.name, slug: b.slug, color: b.color, logo_url: b.logo_url ?? '', status: b.status })
+    setErr('')
+    setShowModal(true)
+  }
+
+  async function handleSave() {
+    setErr('')
+    if (!form.name.trim()) { setErr('Nama brand wajib diisi.'); return }
+    const slug = form.slug.trim() || slugify(form.name)
+    if (!slug) { setErr('Slug tidak valid — pakai huruf/angka.'); return }
+
+    // ADM-5: guard slug unik (case-insensitive), kecuali slug milik brand yang sedang diedit
+    const dup = brands.find(b => b.slug.toLowerCase() === slug.toLowerCase() && b.id !== editing)
+    if (dup) { setErr(`Slug "${slug}" sudah dipakai brand "${dup.name}".`); return }
+
+    try {
+      if (editing) {
+        await updateBrand.mutateAsync({ id: editing, name: form.name, color: form.color, logo_url: form.logo_url || undefined, status: form.status })
+      } else {
+        await createBrand.mutateAsync({ name: form.name, slug, color: form.color, logo_url: form.logo_url || undefined })
+      }
+      setShowModal(false)
+    } catch (e) {
+      const msg = (e as Error).message
+      setErr(msg.includes('duplicate') || msg.includes('unique') ? `Slug "${slug}" sudah dipakai brand lain.` : msg)
+    }
+  }
+
+  const isPending = createBrand.isPending || updateBrand.isPending
+
+  return (
+    <div>
+      <SectionHeader
+        title={`Brand (${brands.length})`}
+        action={<Btn onClick={openNew}>+ Tambah Brand</Btn>}
+      />
+      <div className="bg-white border border-[#EBE5D4] rounded-lg overflow-hidden">
+        {brandsQ.isLoading ? (
+          <div className="p-6 text-[13px] text-[#9A9279]">Memuat...</div>
+        ) : brands.length === 0 ? (
+          <div className="p-8 text-center text-[13px] text-[#9A9279]">Belum ada brand.</div>
+        ) : (
+          <table className="w-full border-collapse text-[13px]">
+            <thead>
+              <tr className="bg-[#FBF6E9]">
+                {['BRAND', 'SLUG', 'STATUS', ''].map(h => (
+                  <th key={h} className="p-[11px_16px] text-left text-[10px] font-semibold tracking-[.05em] text-[#9A9279]">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {brands.map(b => (
+                <tr key={b.id} className="border-t border-[#F1ECDC]">
+                  <td className="p-[11px_16px]">
+                    <div className="flex items-center gap-[9px]">
+                      <span className="w-[10px] h-[10px] rounded-full flex-shrink-0" style={{ background: b.color }}/>
+                      <span className="font-semibold text-[#2B2A24]">{b.name}</span>
+                    </div>
+                  </td>
+                  <td className="p-[11px_16px] text-[#5A574C]">{b.slug}</td>
+                  <td className="p-[11px_16px]">
+                    <span className={`text-[11px] font-semibold px-[9px] py-[3px] rounded-full ${b.status === 'active' ? 'text-[#5E8C61] bg-[#E9F3EA]' : 'text-[#9A9279] bg-[#EFEAD9]'}`}>
+                      {b.status === 'active' ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </td>
+                  <td className="p-[11px_16px] flex items-center gap-3">
+                    <button onClick={() => openEdit(b)}
+                      className="text-[11px] text-[#4F7CAC] border-none bg-none cursor-pointer hover:underline">
+                      Edit
+                    </button>
+                    {/* ADM-4: nonaktifkan/aktifkan brand (soft-delete) */}
+                    <button
+                      onClick={() => { if (confirm(`${b.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'} brand "${b.name}"?`)) updateBrand.mutate({ id: b.id, status: b.status === 'active' ? 'inactive' : 'active' }) }}
+                      className={`text-[11px] border-none bg-none cursor-pointer hover:underline ${b.status === 'active' ? 'text-[#B4452F]' : 'text-[#5E8C61]'}`}>
+                      {b.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {showModal && (
+        <Modal title={editing ? 'Edit Brand' : 'Tambah Brand'} onClose={() => setShowModal(false)}>
+          <Field label="Nama Brand">
+            <input className={inputCls} placeholder="Nama brand"
+              value={form.name}
+              onChange={e => {
+                const name = e.target.value
+                setForm(f => ({ ...f, name, slug: slugTouched ? f.slug : slugify(name) }))
+              }}/>
+          </Field>
+          {!editing && (
+            <Field label="Slug (URL-friendly, unik)">
+              <input className={inputCls} placeholder="nama-brand"
+                value={form.slug}
+                onChange={e => { setSlugTouched(true); setForm(f => ({ ...f, slug: e.target.value })) }}/>
+            </Field>
+          )}
+          <Field label="Warna">
+            <div className="flex items-center gap-[10px]">
+              <input type="color" value={form.color}
+                onChange={e => setForm(f => ({ ...f, color: e.target.value }))}
+                className="w-[42px] h-[36px] rounded-md border border-[#E3DCC8] cursor-pointer bg-transparent p-[2px]"/>
+              <input className={inputCls} placeholder="#5E7A5C"
+                value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))}/>
+            </div>
+          </Field>
+          <Field label="Logo URL (opsional)">
+            <input className={inputCls} placeholder="https://..."
+              value={form.logo_url} onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))}/>
+          </Field>
+          {editing && (
+            <Field label="Status">
+              <select className={inputCls} value={form.status}
+                onChange={e => setForm(f => ({ ...f, status: e.target.value as 'active' | 'inactive' }))}>
+                <option value="active">Aktif</option>
+                <option value="inactive">Nonaktif</option>
+              </select>
+            </Field>
+          )}
+          {err && <div className="text-[12px] text-[#B4452F] bg-[#F7E7E2] border border-[#EAC8BF] rounded-md px-3 py-[8px]">{err}</div>}
+          <div className="flex gap-2 pt-1">
+            <Btn variant="ghost" onClick={() => setShowModal(false)}>Batal</Btn>
+            <Btn onClick={handleSave} disabled={isPending}>
+              {isPending ? 'Menyimpan...' : 'Simpan'}
+            </Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
 // ─── MAIN PAGE ────────────────────────────────────────────────
-type Tab = 'users' | 'products' | 'score'
+type Tab = 'users' | 'products' | 'brands' | 'score'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'users', label: 'Anggota Tim' },
   { id: 'products', label: 'Produk' },
+  { id: 'brands', label: 'Brand' },
   { id: 'score', label: 'Bobot Skor' },
 ]
 
@@ -471,6 +638,7 @@ export default function SettingsPage() {
 
       {tab === 'users'    && <UsersTab />}
       {tab === 'products' && <ProductsTab />}
+      {tab === 'brands'   && <BrandsTab />}
       {tab === 'score'    && <ScoreTab />}
     </div>
   )

@@ -77,7 +77,7 @@ function TaskRing({ rate, circum, dash }: { rate: number; circum: number; dash: 
 //  LEADER DASHBOARD
 // ══════════════════════════════════════════════════════════
 function LeaderDashboard() {
-  const { userRole, rangeStart, rangeEnd, brandId, isAllBrands } = useApp()
+  const { userRole, rangeStart, rangeEnd, brandId, isAllBrands, brands } = useApp()
   const canFinancial = canViewFinancial(userRole)
 
   // brandId 'all' → agregat lintas brand (default dashboard, sesuai D7)
@@ -134,8 +134,47 @@ function LeaderDashboard() {
     { text:'KPI di bawah target',       count:kpiNotYet,     dot:'#B58A1E', bg:'#FAF6E8', border:'#EDE5CC' },
   ].filter(a => a.count > 0)
 
+  // AGG-2/AGG-5: breakdown per brand — hanya saat mode "Semua Brand"
+  // (LeaderDashboard hanya render untuk leader → canFinancial selalu true di sini)
+  const perBrand = isAllBrands ? brands.map(b => {
+    const bTasksActive = tasks.filter(t => t.brand_id === b.id && t.status !== 'cancelled')
+    const bDone = bTasksActive.filter(t => t.status === 'done').length
+    const bRate = bTasksActive.length > 0 ? Math.round((bDone / bTasksActive.length) * 100) : 0
+    const bSales = sales.filter(s => s.brand_id === b.id)
+    const bGross = bSales.reduce((a, s) => a + s.gross_revenue, 0)
+    const bUnits = bSales.reduce((a, s) => a + s.quantity, 0)
+    const bKpi = kpiRes.filter(k => k.brand_id === b.id)
+    const bKpiAvg = bKpi.length > 0 ? Math.round(bKpi.reduce((a, k) => a + k.achievement_percentage, 0) / bKpi.length) : 0
+    return { brand: b, gross: bGross, units: bUnits, taskRate: bRate, taskCount: bTasksActive.length, kpiAvg: bKpiAvg, kpiCount: bKpi.length }
+  }) : []
+
   return (
     <div className="flex flex-col gap-[14px]">
+      {/* AGG-2: Ringkasan per Brand (mode Semua Brand) */}
+      {isAllBrands && perBrand.length > 0 && (
+        <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
+          <div className="text-[13px] font-bold text-[#2B2A24] mb-[12px]">Ringkasan per Brand</div>
+          <div className="grid gap-[12px]" style={{ gridTemplateColumns: `repeat(${perBrand.length}, 1fr)` }}>
+            {perBrand.map(pb => (
+              <div key={pb.brand.id} className="border border-[#EBE5D4] rounded-[9px] p-[12px]">
+                <div className="flex items-center gap-[6px] mb-[10px]">
+                  <span className="w-[8px] h-[8px] rounded-full flex-shrink-0" style={{ background: pb.brand.color }}/>
+                  <span className="text-[12.5px] font-bold text-[#2B2A24] truncate">{pb.brand.name}</span>
+                </div>
+                <div className="flex flex-col gap-[6px] text-[12px]">
+                  {canFinancial && (
+                    <div className="flex justify-between"><span className="text-[#9A9279]">Omzet</span><span className="font-semibold text-[#2B2A24]">{formatRupiah(pb.gross, true)}</span></div>
+                  )}
+                  <div className="flex justify-between"><span className="text-[#9A9279]">Unit terjual</span><span className="font-semibold text-[#2B2A24]">{formatNumber(pb.units)}</span></div>
+                  <div className="flex justify-between"><span className="text-[#9A9279]">Task selesai</span><span className="font-semibold" style={{ color: pb.taskRate >= 80 ? '#5E8C61' : pb.taskRate >= 50 ? '#C9A227' : '#C77B3C' }}>{pb.taskRate}% ({pb.taskCount})</span></div>
+                  <div className="flex justify-between"><span className="text-[#9A9279]">KPI avg</span><span className="font-semibold" style={{ color: pb.kpiAvg >= 100 ? '#5E8C61' : pb.kpiAvg >= 80 ? '#4F7CAC' : '#C77B3C' }}>{pb.kpiCount > 0 ? `${pb.kpiAvg}%` : '—'}</span></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Row 1 */}
       <div className="grid grid-cols-4 gap-[14px]">
         {canFinancial ? (
