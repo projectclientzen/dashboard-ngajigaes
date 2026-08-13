@@ -146,6 +146,14 @@ export async function replyComment(commentId: string, text: string) {
   })
 }
 
+/** Update status moderasi komentar — pending/resolved/ignored (Standard+). 204 No Content. */
+export async function updateCommentStatus(commentId: string, status: CommentStatus) {
+  return replizFetch<null>(`/comment/${commentId}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  })
+}
+
 /** List percakapan chat/DM (Gold+) */
 export async function getChats(page = 1, status?: ChatStatus, limit = 20) {
   const qs = new URLSearchParams({ page: String(page), limit: String(limit) })

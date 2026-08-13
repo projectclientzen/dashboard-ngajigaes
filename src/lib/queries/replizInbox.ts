@@ -6,16 +6,23 @@ type RawRow = Record<string, unknown>
 
 export type CommentStatus = 'pending' | 'resolved' | 'ignored'
 
+export interface ReplizCommentContent {
+  id: string | null
+  title: string | null   // hook — baris pertama dari description
+  type: string | null    // video/album/image/dst
+  thumbnail: string | null
+}
+
 export interface ReplizComment {
   id: string
   status: CommentStatus
   text: string
   authorName: string
   authorPicture: string | null
-  contentTitle: string | null
   accountName: string
   platform: string
   createdAt: string
+  content: ReplizCommentContent
 }
 
 function mapComment(raw: RawRow): ReplizComment {
@@ -23,16 +30,24 @@ function mapComment(raw: RawRow): ReplizComment {
   const content = (raw.content ?? {}) as RawRow
   const account = (raw.account ?? {}) as RawRow
   const owner = (comment.owner ?? {}) as RawRow
+  const medias = (content.medias ?? []) as RawRow[]
+  const description = (content.description as string) ?? ''
+  const hook = description.split('\n')[0]?.trim() || null
   return {
     id: (raw.id as string) ?? (raw._id as string) ?? '',
     status: (raw.status as CommentStatus) ?? 'pending',
     text: (comment.text as string) ?? '',
     authorName: (owner.name as string) ?? 'Unknown',
     authorPicture: (owner.picture as string) ?? null,
-    contentTitle: (content.title as string) ?? null,
     accountName: (account.name as string) ?? '',
     platform: (account.type as string) ?? '',
     createdAt: (comment.createdAt as string) ?? (raw.createdAt as string) ?? '',
+    content: {
+      id: (content.id as string) ?? null,
+      title: hook,
+      type: (content.type as string) ?? null,
+      thumbnail: (medias[0]?.thumbnail as string) ?? null,
+    },
   }
 }
 
@@ -59,6 +74,24 @@ export function useReplyComment() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ comment_id: commentId, text }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error ?? `HTTP ${res.status}`)
+      return body as { commentId: string; status: CommentStatus; statusError?: string }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['repliz-comments'] }),
+  })
+}
+
+/** Tandai komentar selesai/diabaikan tanpa membalas */
+export function useMarkCommentStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ commentId, status }: { commentId: string; status: CommentStatus }) => {
+      const res = await fetch('/api/repliz/comments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ comment_id: commentId, status }),
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) throw new Error(body?.error ?? `HTTP ${res.status}`)

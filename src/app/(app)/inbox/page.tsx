@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  useReplizComments, useReplyComment, type CommentStatus,
+  useReplizComments, useReplyComment, useMarkCommentStatus, type CommentStatus,
   useReplizChats, useSendChatMessage,
   type ReplizComment, type ReplizChat,
 } from '@/lib/queries/replizInbox'
@@ -11,6 +11,11 @@ import { formatDateTime, getInitials } from '@/lib/utils'
 const PLATFORM_LABEL: Record<string, string> = {
   facebook: 'Facebook', instagram: 'Instagram', threads: 'Threads',
   tiktok: 'TikTok', youtube: 'YouTube', linkedin: 'LinkedIn', shopee: 'Shopee',
+}
+
+const CONTENT_TYPE_LABEL: Record<string, string> = {
+  video: 'Reels', reel: 'Reels', album: 'Album', carousel: 'Album',
+  image: 'Image', text: 'Text', story: 'Story', link: 'Link',
 }
 
 const STATUS_META: Record<CommentStatus, { label: string; c: string; bg: string }> = {
@@ -71,12 +76,55 @@ function ErrorNotice({ message }: { message: string }) {
 }
 
 // ─── Komentar ─────────────────────────────────────────────────
+function PostContext({ content, platform }: { content: ReplizComment['content']; platform: string }) {
+  const typeLabel = content.type ? (CONTENT_TYPE_LABEL[content.type] ?? content.type) : null
+  const igLink = platform === 'instagram' && content.id ? `https://www.instagram.com/p/${content.id}/` : null
+
+  if (!content.thumbnail && !content.title && !typeLabel) return null
+
+  const body = (
+    <div className="flex items-center gap-2 mt-[6px] min-w-0">
+      {content.thumbnail && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={content.thumbnail} alt="" className="w-[40px] h-[40px] rounded-md object-cover flex-shrink-0 border border-[#EBE5D4]" />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-[6px]">
+          {typeLabel && (
+            <span className="text-[9px] font-bold text-[#4F7CAC] bg-[#E8F0F6] rounded px-[6px] py-[1px] flex-shrink-0">
+              {typeLabel}
+            </span>
+          )}
+          <span className="text-[11px] text-[#9A9279] truncate">
+            {content.title ? `pada: ${content.title}` : 'pada: (postingan tanpa caption)'}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (!igLink) return body
+  return (
+    <a href={igLink} target="_blank" rel="noopener noreferrer"
+      className="no-underline hover:opacity-80 transition-opacity block">
+      {body}
+    </a>
+  )
+}
+
 function CommentCard({ comment }: { comment: ReplizComment }) {
   const replyMut = useReplyComment()
+  const markMut = useMarkCommentStatus()
   const [sent, setSent] = useState(false)
+  const [statusWarning, setStatusWarning] = useState<string | null>(null)
 
   function handleSend(text: string) {
-    replyMut.mutate({ commentId: comment.id, text }, { onSuccess: () => setSent(true) })
+    replyMut.mutate({ commentId: comment.id, text }, {
+      onSuccess: (res) => {
+        setSent(true)
+        if (res.statusError) setStatusWarning(res.statusError)
+      },
+    })
   }
 
   return (
@@ -91,18 +139,25 @@ function CommentCard({ comment }: { comment: ReplizComment }) {
             </span>
             {comment.createdAt && <span className="text-[11px] text-[#A89F86]">{formatDateTime(comment.createdAt)}</span>}
           </div>
-          {comment.contentTitle && (
-            <div className="text-[11px] text-[#9A9279] mt-[2px] truncate">pada: {comment.contentTitle}</div>
-          )}
+          <PostContext content={comment.content} platform={comment.platform} />
           <div className="text-[13px] text-[#3F3D34] mt-[6px]">{comment.text || <em className="text-[#A89F86]">(tanpa teks)</em>}</div>
 
           {comment.status === 'pending' && (
             sent ? (
-              <div className="text-[12px] text-[#5E8C61] font-semibold mt-[10px]">✓ Balasan terkirim</div>
+              <div className="mt-[10px]">
+                <div className="text-[12px] text-[#5E8C61] font-semibold">✓ Balasan terkirim</div>
+                {statusWarning && <div className="text-[11px] text-[#C77B3C] mt-[2px]">Status belum ter-update: {statusWarning}</div>}
+              </div>
             ) : (
               <>
                 <ReplyBox placeholder="Tulis balasan..." onSend={handleSend} pending={replyMut.isPending} />
                 {replyMut.isError && <div className="text-[11px] text-[#B4452F] mt-[4px]">{(replyMut.error as Error).message}</div>}
+                <button onClick={() => markMut.mutate({ commentId: comment.id, status: 'resolved' })}
+                  disabled={markMut.isPending}
+                  className="text-[11px] font-semibold text-[#4F7CAC] bg-none border-none cursor-pointer hover:underline mt-[6px] disabled:opacity-50">
+                  {markMut.isPending ? 'Menandai...' : 'Tandai selesai (tanpa balas)'}
+                </button>
+                {markMut.isError && <div className="text-[11px] text-[#B4452F] mt-[4px]">{(markMut.error as Error).message}</div>}
               </>
             )
           )}
