@@ -199,7 +199,7 @@ function TopKontenCard({ brandId, contentFormatFilter }: { brandId: string | 'al
             {filtered.map((c, i) => (
               <div key={c.id} className="border border-[#F1ECDC] rounded-lg p-3">
                 <div className="flex items-start gap-2">
-                  <span className="text-[12px] font-bold text-[#B0A78C] flex-shrink-0 w-[16px]">{i + 1}</span>
+                  <span className="w-[20px] h-[20px] rounded-full bg-[#5E7A5C] text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">{i + 1}</span>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-[#2B2A24] text-[13px] truncate">{c.content_title}</div>
                     <div className="flex items-center gap-[5px] mt-[4px]">
@@ -611,46 +611,50 @@ export default function InstagramInsightPage() {
         )}
       </div>
 
-      {/* Sumber Data */}
+      {/* Sumber Data — accordion di mobile (default collapsed), selalu terbuka di desktop */}
       <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
-        <div className="flex items-center gap-[10px] mb-3">
+        <button onClick={() => setSourceOpen(o => !o)}
+          className="flex items-center gap-[10px] w-full text-left border-none bg-none cursor-pointer p-0 sm:cursor-default">
           <div className="w-8 h-8 rounded-lg bg-[#EAF0FA] flex items-center justify-center flex-shrink-0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F7CAC" strokeWidth="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           </div>
-          <div>
+          <div className="flex-1">
             <div className="text-[13px] font-bold text-[#2B2A24]">Sumber data</div>
             <div className="text-[11px] text-[#9A9279]">Auto-sync dari Repliz</div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 bg-[#E9F3EA] rounded-md px-3 py-[8px] mb-4">
-          <span className="w-[7px] h-[7px] rounded-full bg-[#5E8C61] flex-shrink-0"/>
-          <span className="text-[12px] text-[#3F5A3E]">
-            {latest?.updated_at
-              ? <>Terakhir sync <b>{formatDateTime(latest.updated_at)}</b></>
-              : 'Belum pernah sync'}
-          </span>
-        </div>
-        <div className="text-[10px] font-semibold tracking-[.05em] text-[#9A9279] mb-2">BUTUH INPUT MANUAL</div>
-        <div className="flex flex-col gap-2 mb-3">
-          {[
-            { key: 'followers', label: 'Followers', val: latest?.followers },
-            { key: 'impressions', label: 'Impressions', val: latest?.impressions },
-            { key: 'profile_visits', label: 'Profile visits', val: latest?.profile_visits },
-            { key: 'dm_count', label: 'DM masuk', val: latest?.dm_count },
-          ].map(f => (
-            <div key={f.key} className="flex items-center justify-between border-t border-[#F1ECDC] pt-2 first:border-t-0 first:pt-0">
-              <div>
-                <div className="text-[13px] font-semibold text-[#2B2A24]">{f.label}</div>
-                <div className="text-[11px]" style={{ color: f.val != null ? '#9A9279' : '#C77B3C' }}>
-                  {f.val != null ? `${formatNumber(f.val)} · upd. ${latest ? formatDate(latest.insight_date, 'd MMM') : ''}` : 'Belum diisi'}
+          <svg className={`sm:hidden flex-shrink-0 transition-transform ${sourceOpen ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9279" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div className={`${sourceOpen ? 'block' : 'hidden'} sm:block mt-3`}>
+          <div className="flex items-center gap-2 bg-[#E9F3EA] rounded-md px-3 py-[8px] mb-4">
+            <span className="w-[7px] h-[7px] rounded-full bg-[#5E8C61] flex-shrink-0"/>
+            <span className="text-[12px] text-[#3F5A3E]">
+              {latest?.updated_at
+                ? <>Terakhir sync <b>{formatDateTime(latest.updated_at)}</b></>
+                : 'Belum pernah sync'}
+            </span>
+          </div>
+          <div className="text-[10px] font-semibold tracking-[.05em] text-[#9A9279] mb-2">BUTUH INPUT MANUAL</div>
+          <div className="flex flex-col gap-2 mb-3">
+            {[
+              { key: 'followers', label: 'Followers', val: latest?.followers },
+              { key: 'impressions', label: 'Impressions', val: latest?.impressions },
+              { key: 'profile_visits', label: 'Profile visits', val: latest?.profile_visits },
+              { key: 'dm_count', label: 'DM masuk', val: latest?.dm_count },
+            ].map(f => (
+              <div key={f.key} className="flex items-center justify-between border-t border-[#F1ECDC] pt-2 first:border-t-0 first:pt-0">
+                <div>
+                  <div className="text-[13px] font-semibold text-[#2B2A24]">{f.label}</div>
+                  <div className="text-[11px]" style={{ color: f.val != null ? '#9A9279' : '#C77B3C' }}>
+                    {f.val != null ? `${formatNumber(f.val)} · upd. ${latest ? formatDate(latest.insight_date, 'd MMM') : ''}` : 'Belum diisi'}
+                  </div>
                 </div>
+                <button onClick={() => openForm()} disabled={isAllBrands} className={inputBtnCls}>+ Input</button>
               </div>
-              <button onClick={() => openForm()} disabled={isAllBrands} className={inputBtnCls}>+ Input</button>
-            </div>
-          ))}
-        </div>
-        <div className="text-[11px] text-[#A89F86] border-t border-[#F1ECDC] pt-2">
-          Kolom auto-sync diperbarui otomatis tiap pagi. Kolom manual diisi tim saat rekap harian.
+            ))}
+          </div>
+          <div className="text-[11px] text-[#A89F86] border-t border-[#F1ECDC] pt-2">
+            Kolom auto-sync diperbarui otomatis tiap pagi. Kolom manual diisi tim saat rekap harian.
+          </div>
         </div>
       </div>
 
