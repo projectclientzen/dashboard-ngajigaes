@@ -37,6 +37,7 @@ export function useAccountInsights(start: string, end: string, brandId?: string 
         engagement_rate: (d as RawRow).engagement_rate as number | null,
         notes: (d as RawRow).notes as string | null,
         brand_id: (d as RawRow).brand_id as string,
+        updated_at: (d as RawRow).updated_at as string | null,
       })) as AccountInsight[]
     },
   })
@@ -51,7 +52,7 @@ export function useContentInsights(start: string, end: string, brandId?: string 
       const sb = supabase as any
       let q = sb
         .from('content_insight_view')
-        .select('*, content:contents(title)')
+        .select('*, content:contents(title, format, theme)')
         .gte('insight_date', start)
         .lte('insight_date', end)
         .order('reach', { ascending: false })
@@ -63,6 +64,8 @@ export function useContentInsights(start: string, end: string, brandId?: string 
         id: c.id as string,
         content_id: c.content_id as string,
         content_title: (c.content as { title: string } | null)?.title ?? '—',
+        content_format: (c.content as { format: ContentInsight['content_format'] } | null)?.format ?? null,
+        content_theme: (c.content as { theme: string | null } | null)?.theme ?? null,
         insight_date: c.insight_date as string,
         reach: c.reach as number | null,
         impressions: c.impressions as number | null,

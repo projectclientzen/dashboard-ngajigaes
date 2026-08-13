@@ -136,6 +136,7 @@ export const MOCK_ACCOUNT_INSIGHTS: AccountInsight[] = INSIGHT_DATA.map((d, i) =
   engagement_rate: d.eng,
   notes: null,
   brand_id: 'brand-ngajigaes',
+  updated_at: null,
 }))
 
 export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
@@ -143,6 +144,8 @@ export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
     id: 'ci-01',
     content_id: 'content-01',
     content_title: 'Tips Menabung 1 Juta Per Bulan',
+    content_format: 'carousel',
+    content_theme: 'Keuangan Pribadi',
     insight_date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     reach: 8500,
     impressions: 12000,
@@ -161,6 +164,8 @@ export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
     id: 'ci-02',
     content_id: 'content-03',
     content_title: 'Feed: Quote Motivasi Senin Pagi',
+    content_format: 'feed_single',
+    content_theme: 'Motivasi',
     insight_date: new Date().toISOString().split('T')[0],
     reach: 2100,
     impressions: 3200,

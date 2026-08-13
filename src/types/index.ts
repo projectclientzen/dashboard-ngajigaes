@@ -255,12 +255,15 @@ export interface AccountInsight {
   engagement_rate: number | null    // dihitung backend
   notes: string | null
   brand_id: string
+  updated_at: string | null
 }
 
 export interface ContentInsight {
   id: string
   content_id: string
   content_title: string             // denormalized
+  content_format: ContentFormat | null   // denormalized
+  content_theme: string | null           // denormalized
   insight_date: string
   reach: number | null
   impressions: number | null
