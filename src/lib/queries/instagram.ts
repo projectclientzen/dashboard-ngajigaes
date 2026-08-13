@@ -34,6 +34,8 @@ export function useAccountInsights(start: string, end: string, brandId?: string 
         total_comments: (d as RawRow).total_comments as number | null,
         total_saves: (d as RawRow).total_saves as number | null,
         total_shares: (d as RawRow).total_shares as number | null,
+        follows_count: (d as RawRow).follows_count as number | null,
+        unfollows_count: (d as RawRow).unfollows_count as number | null,
         engagement_rate: (d as RawRow).engagement_rate as number | null,
         notes: (d as RawRow).notes as string | null,
         brand_id: (d as RawRow).brand_id as string,

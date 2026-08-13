@@ -133,6 +133,8 @@ export const MOCK_ACCOUNT_INSIGHTS: AccountInsight[] = INSIGHT_DATA.map((d, i) =
   total_comments: d.comments,
   total_saves: d.saves,
   total_shares: d.shares,
+  follows_count: null,
+  unfollows_count: null,
   engagement_rate: d.eng,
   notes: null,
   brand_id: 'brand-ngajigaes',

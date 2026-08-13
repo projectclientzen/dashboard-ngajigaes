@@ -159,38 +159,71 @@ function TopKontenCard({ brandId, contentFormatFilter }: { brandId: string | 'al
           </div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-[12px]">
-            <thead>
-              <tr className="border-b border-[#F1ECDC]">
-                {['#', 'KONTEN', 'REACH', 'LIKES', 'KOMEN', 'SAVES', 'ER'].map(h => (
-                  <th key={h} className="p-[8px_10px] text-left text-[10px] font-semibold tracking-[.05em] text-[#9A9279] whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c, i) => (
-                <tr key={c.id} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]">
-                  <td className="p-[8px_10px] font-bold text-[#B0A78C]">{i + 1}</td>
-                  <td className="p-[8px_10px]">
-                    <div className="font-semibold text-[#2B2A24] max-w-[220px] truncate">{c.content_title}</div>
-                    <div className="flex items-center gap-[5px] mt-[3px]">
+        <>
+          {/* Mobile: card list */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {filtered.map((c, i) => (
+              <div key={c.id} className="border border-[#F1ECDC] rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-[12px] font-bold text-[#B0A78C] flex-shrink-0 w-[16px]">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-[#2B2A24] text-[13px] truncate">{c.content_title}</div>
+                    <div className="flex items-center gap-[5px] mt-[4px]">
                       <FormatBadge format={c.content_format} />
                       <ThemeBadge theme={c.content_theme} />
                     </div>
-                  </td>
-                  <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.reach != null ? formatNumber(c.reach) : '—'}</td>
-                  <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.likes != null ? formatNumber(c.likes) : '—'}</td>
-                  <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.comments != null ? formatNumber(c.comments) : '—'}</td>
-                  <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.saves != null ? formatNumber(c.saves) : '—'}</td>
-                  <td className="p-[8px_10px] tabular-nums font-semibold" style={{ color: c.engagement_rate != null ? erColor(c.engagement_rate / 100) : '#9A9279' }}>
-                    {c.engagement_rate != null ? `${c.engagement_rate.toFixed(1)}%` : '—'}
-                  </td>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-2 mt-[10px] text-center">
+                  {[
+                    ['Reach', c.reach], ['Likes', c.likes], ['Komen', c.comments], ['Saves', c.saves],
+                  ].map(([label, val]) => (
+                    <div key={label as string}>
+                      <div className="text-[12px] font-bold text-[#2B2A24] tabular-nums">{val != null ? formatNumber(val as number) : '—'}</div>
+                      <div className="text-[9px] text-[#A89F86]">{label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-[11px] font-semibold text-right mt-[6px]" style={{ color: c.engagement_rate != null ? erColor(c.engagement_rate / 100) : '#9A9279' }}>
+                  ER {c.engagement_rate != null ? `${c.engagement_rate.toFixed(1)}%` : '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Desktop: table */}
+          <div className="overflow-x-auto hidden sm:block">
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr className="border-b border-[#F1ECDC]">
+                  {['#', 'KONTEN', 'REACH', 'LIKES', 'KOMEN', 'SAVES', 'ER'].map(h => (
+                    <th key={h} className="p-[8px_10px] text-left text-[10px] font-semibold tracking-[.05em] text-[#9A9279] whitespace-nowrap">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.map((c, i) => (
+                  <tr key={c.id} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]">
+                    <td className="p-[8px_10px] font-bold text-[#B0A78C]">{i + 1}</td>
+                    <td className="p-[8px_10px]">
+                      <div className="font-semibold text-[#2B2A24] max-w-[220px] truncate">{c.content_title}</div>
+                      <div className="flex items-center gap-[5px] mt-[3px]">
+                        <FormatBadge format={c.content_format} />
+                        <ThemeBadge theme={c.content_theme} />
+                      </div>
+                    </td>
+                    <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.reach != null ? formatNumber(c.reach) : '—'}</td>
+                    <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.likes != null ? formatNumber(c.likes) : '—'}</td>
+                    <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.comments != null ? formatNumber(c.comments) : '—'}</td>
+                    <td className="p-[8px_10px] tabular-nums text-[#5A574C]">{c.saves != null ? formatNumber(c.saves) : '—'}</td>
+                    <td className="p-[8px_10px] tabular-nums font-semibold" style={{ color: c.engagement_rate != null ? erColor(c.engagement_rate / 100) : '#9A9279' }}>
+                      {c.engagement_rate != null ? `${c.engagement_rate.toFixed(1)}%` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   )
@@ -205,6 +238,7 @@ export default function InstagramInsightPage() {
 
   const [contentFormatFilter, setContentFormatFilter] = useState<'all' | ContentFormat>('all')
   const [showForm, setShowForm] = useState(false)
+  const [sourceOpen, setSourceOpen] = useState(false)
   const [form, setForm] = useState({
     insight_date: new Date().toISOString().split('T')[0],
     followers: '', reach: '', impressions: '', profile_visits: '',
@@ -361,17 +395,17 @@ export default function InstagramInsightPage() {
           <>
             <div className="text-[26px] font-bold text-[#2B2A24] tabular-nums">{formatNumber(currFollower.followers as number)}</div>
             <div className="text-[11px] text-[#A89F86] mb-3">followers saat ini</div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#F3F6F0] rounded-lg p-3">
-                <div className="text-[11px] text-[#8A8675] mb-1">7 hari</div>
+            <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="bg-[#F3F6F0] rounded-lg p-3 flex items-center justify-between sm:block">
+                <div className="text-[11px] text-[#8A8675] sm:mb-1">Delta 7 hari</div>
                 {delta7 != null ? (
                   <div className="text-[15px] font-bold tabular-nums" style={{ color: delta7 >= 0 ? '#4E7A4C' : '#B4452F' }}>
                     {delta7 >= 0 ? '▲' : '▼'} {delta7 >= 0 ? '+' : ''}{formatNumber(delta7)}
                   </div>
                 ) : <div className="text-[13px] text-[#A89F86]">—</div>}
               </div>
-              <div className="bg-[#F3F6F0] rounded-lg p-3">
-                <div className="text-[11px] text-[#8A8675] mb-1">30 hari</div>
+              <div className="bg-[#F3F6F0] rounded-lg p-3 flex items-center justify-between sm:block">
+                <div className="text-[11px] text-[#8A8675] sm:mb-1">Delta 30 hari</div>
                 {delta30 != null ? (
                   <div className="text-[15px] font-bold tabular-nums" style={{ color: delta30 >= 0 ? '#4E7A4C' : '#B4452F' }}>
                     {delta30 >= 0 ? '▲' : '▼'} {delta30 >= 0 ? '+' : ''}{formatNumber(delta30)}
@@ -436,54 +470,110 @@ export default function InstagramInsightPage() {
             <div className="text-[13px] text-[#9A9279]">Klik &quot;+ Input Insight&quot; untuk memasukkan data harian.</div>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-[12px]">
-              <thead>
-                <tr className="bg-[#FBF6E9]">
-                  {['TANGGAL', 'REACH', 'LIKES', 'KOMEN', 'SAVES', 'SHARES', 'ER', 'CATATAN'].map(h => (
-                    <th key={h} className="p-[10px_14px] text-left text-[10px] font-semibold tracking-[.05em] text-[#9A9279] whitespace-nowrap">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {[...rows].reverse().map(ins => {
-                  const isBest = bestReach != null && ins.reach === bestReach
-                  return (
-                    <tr key={ins.id} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]" style={isBest ? { background: '#F3F6F0' } : undefined}>
-                      <td className="p-[10px_14px] font-semibold text-[#2B2A24] whitespace-nowrap">
-                        <div className="flex items-center gap-[6px]">
-                          {formatDate(ins.insight_date, 'd MMM yyyy')}
-                          {isBest && <span className="text-[9px] font-bold text-[#3C5A3B] bg-[#DCE7D6] rounded px-[6px] py-[1px]">terbaik</span>}
-                        </div>
-                      </td>
-                      <td className="p-[10px_14px] tabular-nums text-[#5A574C] whitespace-nowrap">
-                        {ins.reach != null ? formatNumber(ins.reach) : '—'}
+          <>
+            {/* Mobile: card list */}
+            <div className="flex flex-col gap-2 p-3 sm:hidden">
+              {[...rows].reverse().map(ins => {
+                const isBest = bestReach != null && ins.reach === bestReach
+                return (
+                  <div key={ins.id} className="border border-[#F1ECDC] rounded-lg p-3" style={isBest ? { background: '#F3F6F0' } : undefined}>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="font-semibold text-[#2B2A24] text-[13px]">{formatDate(ins.insight_date, 'd MMM yyyy')}</span>
+                      {isBest && <span className="text-[9px] font-bold text-[#3C5A3B] bg-[#DCE7D6] rounded px-[6px] py-[1px]">terbaik</span>}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center mb-2">
+                      <div>
+                        <div className="text-[13px] font-bold text-[#2B2A24] tabular-nums">{ins.reach != null ? formatNumber(ins.reach) : '—'}</div>
+                        <div className="text-[9px] text-[#A89F86]">Reach</div>
                         {ins.reachDelta != null && ins.reachDelta !== 0 && (
-                          <span className="ml-[6px] text-[10px] font-semibold" style={{ color: ins.reachDelta >= 0 ? '#4E7A4C' : '#B4452F' }}>
+                          <div className="text-[9px] font-semibold" style={{ color: ins.reachDelta >= 0 ? '#4E7A4C' : '#B4452F' }}>
                             {ins.reachDelta >= 0 ? '▲' : '▼'} {formatNumber(Math.abs(ins.reachDelta))}
-                          </span>
+                          </div>
                         )}
-                      </td>
-                      <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_likes != null ? formatNumber(ins.total_likes) : '—'}</td>
-                      <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_comments != null ? formatNumber(ins.total_comments) : '—'}</td>
-                      <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_saves != null ? formatNumber(ins.total_saves) : '—'}</td>
-                      <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_shares != null ? formatNumber(ins.total_shares) : '—'}</td>
-                      <td className="p-[10px_14px] tabular-nums font-semibold whitespace-nowrap"
-                        style={{ color: ins.engagement_rate != null ? erColor(ins.engagement_rate / 100) : '#9A9279' }}>
-                        {ins.engagement_rate != null ? `${ins.engagement_rate.toFixed(2)}%` : '—'}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-bold text-[#2B2A24] tabular-nums">{ins.total_likes != null ? formatNumber(ins.total_likes) : '—'}</div>
+                        <div className="text-[9px] text-[#A89F86]">Likes</div>
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-bold text-[#2B2A24] tabular-nums">{ins.total_comments != null ? formatNumber(ins.total_comments) : '—'}</div>
+                        <div className="text-[9px] text-[#A89F86]">Komen</div>
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-bold text-[#2B2A24] tabular-nums">{ins.total_saves != null ? formatNumber(ins.total_saves) : '—'}</div>
+                        <div className="text-[9px] text-[#A89F86]">Saves</div>
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-bold text-[#2B2A24] tabular-nums">{ins.total_shares != null ? formatNumber(ins.total_shares) : '—'}</div>
+                        <div className="text-[9px] text-[#A89F86]">Shares</div>
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-bold tabular-nums" style={{ color: ins.engagement_rate != null ? erColor(ins.engagement_rate / 100) : '#9A9279' }}>
+                          {ins.engagement_rate != null ? `${ins.engagement_rate.toFixed(1)}%` : '—'}
+                        </div>
+                        <div className="text-[9px] text-[#A89F86]">ER</div>
                         {ins.erDelta != null && Math.abs(ins.erDelta) >= 0.01 && (
-                          <span className="ml-[6px] text-[10px] font-semibold" style={{ color: ins.erDelta >= 0 ? '#4E7A4C' : '#B4452F' }}>
+                          <div className="text-[9px] font-semibold" style={{ color: ins.erDelta >= 0 ? '#4E7A4C' : '#B4452F' }}>
                             {ins.erDelta >= 0 ? '▲' : '▼'} {Math.abs(ins.erDelta).toFixed(1)}pt
-                          </span>
+                          </div>
                         )}
-                      </td>
-                      <td className="p-[10px_14px] text-[#8A8675] max-w-[160px] truncate">{ins.notes || '—'}</td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                    {ins.notes && <div className="text-[11px] text-[#8A8675] border-t border-[#F1ECDC] pt-2">{ins.notes}</div>}
+                  </div>
+                )
+              })}
+            </div>
+            {/* Desktop: table */}
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full border-collapse text-[12px]">
+                <thead>
+                  <tr className="bg-[#FBF6E9]">
+                    {['TANGGAL', 'REACH', 'LIKES', 'KOMEN', 'SAVES', 'SHARES', 'ER', 'CATATAN'].map(h => (
+                      <th key={h} className="p-[10px_14px] text-left text-[10px] font-semibold tracking-[.05em] text-[#9A9279] whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...rows].reverse().map(ins => {
+                    const isBest = bestReach != null && ins.reach === bestReach
+                    return (
+                      <tr key={ins.id} className="border-t border-[#F1ECDC] hover:bg-[#FDFAF3]" style={isBest ? { background: '#F3F6F0' } : undefined}>
+                        <td className="p-[10px_14px] font-semibold text-[#2B2A24] whitespace-nowrap">
+                          <div className="flex items-center gap-[6px]">
+                            {formatDate(ins.insight_date, 'd MMM yyyy')}
+                            {isBest && <span className="text-[9px] font-bold text-[#3C5A3B] bg-[#DCE7D6] rounded px-[6px] py-[1px]">terbaik</span>}
+                          </div>
+                        </td>
+                        <td className="p-[10px_14px] tabular-nums text-[#5A574C] whitespace-nowrap">
+                          {ins.reach != null ? formatNumber(ins.reach) : '—'}
+                          {ins.reachDelta != null && ins.reachDelta !== 0 && (
+                            <span className="ml-[6px] text-[10px] font-semibold" style={{ color: ins.reachDelta >= 0 ? '#4E7A4C' : '#B4452F' }}>
+                              {ins.reachDelta >= 0 ? '▲' : '▼'} {formatNumber(Math.abs(ins.reachDelta))}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_likes != null ? formatNumber(ins.total_likes) : '—'}</td>
+                        <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_comments != null ? formatNumber(ins.total_comments) : '—'}</td>
+                        <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_saves != null ? formatNumber(ins.total_saves) : '—'}</td>
+                        <td className="p-[10px_14px] tabular-nums text-[#5A574C]">{ins.total_shares != null ? formatNumber(ins.total_shares) : '—'}</td>
+                        <td className="p-[10px_14px] tabular-nums font-semibold whitespace-nowrap"
+                          style={{ color: ins.engagement_rate != null ? erColor(ins.engagement_rate / 100) : '#9A9279' }}>
+                          {ins.engagement_rate != null ? `${ins.engagement_rate.toFixed(2)}%` : '—'}
+                          {ins.erDelta != null && Math.abs(ins.erDelta) >= 0.01 && (
+                            <span className="ml-[6px] text-[10px] font-semibold" style={{ color: ins.erDelta >= 0 ? '#4E7A4C' : '#B4452F' }}>
+                              {ins.erDelta >= 0 ? '▲' : '▼'} {Math.abs(ins.erDelta).toFixed(1)}pt
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-[10px_14px] text-[#8A8675] max-w-[160px] truncate">{ins.notes || '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -529,6 +619,14 @@ export default function InstagramInsightPage() {
           Kolom auto-sync diperbarui otomatis tiap pagi. Kolom manual diisi tim saat rekap harian.
         </div>
       </div>
+
+      {/* FAB — input insight cepat, mobile only (desktop pakai tombol "+ Input Insight") */}
+      <button onClick={() => openForm()} disabled={isAllBrands}
+        title={isAllBrands ? 'Pilih brand dulu untuk input insight' : 'Input Insight'}
+        className="md:hidden fixed right-[18px] bottom-[88px] z-40 w-[52px] h-[52px] rounded-full bg-[#5E7A5C] text-white border-none shadow-lg flex items-center justify-center text-[26px] leading-none cursor-pointer hover:bg-[#4F6A4D] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        style={{ bottom: 'calc(72px + env(safe-area-inset-bottom) + 16px)' }}>
+        +
+      </button>
 
       {showForm && (
         <div className="fixed inset-0 z-50">

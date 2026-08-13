@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTasks } from '@/lib/queries/tasks'
 import { useExtraTasks } from '@/lib/queries/extra-tasks'
+import { useInboxPendingBadge } from '@/lib/queries/inboxMeta'
 
 // ─── Icons ─────────────────────────────────────────────────────
 const IC = {
@@ -42,7 +43,7 @@ const LEADER_NAV = [
   { label: 'KONTEN', items: [
     { href: '/content-calendar',  label: 'Content Calendar',   icon: IC.calendar,  badge: false },
     { href: '/instagram-insight', label: 'Instagram Insight',  icon: IC.instagram, badge: false },
-    { href: '/inbox',             label: 'Inbox',              icon: IC.inbox,     badge: false },
+    { href: '/inbox',             label: 'Inbox',              icon: IC.inbox,     badge: true },
   ]},
   { label: 'BISNIS', items: [
     { href: '/sales',             label: 'Omzet & Produk',     icon: IC.sales,     badge: false },
@@ -59,7 +60,7 @@ const MEMBER_NAV = [
     { href: '/daily-reports',     label: 'Daily Report',       icon: IC.daily,     badge: false },
     { href: '/content-calendar',  label: 'Konten Saya',        icon: IC.calendar,  badge: false },
     { href: '/extra-tasks',       label: 'Tugas Tambahan',     icon: IC.extra,     badge: true },
-    { href: '/inbox',             label: 'Inbox',              icon: IC.inbox,     badge: false },
+    { href: '/inbox',             label: 'Inbox',              icon: IC.inbox,     badge: true },
   ]},
   { label: 'PERFORMA', items: [
     { href: '/kpi',               label: 'KPI Saya',           icon: IC.kpi,       badge: false },
@@ -73,13 +74,13 @@ function avatarBg(name: string) {
   return AVATAR_COLORS[name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length]
 }
 
-function NavItem({ href, label, icon, taskBadge, extraBadge }: {
+function NavItem({ href, label, icon, taskBadge, extraBadge, inboxBadge }: {
   href: string; label: string; icon: React.ReactNode
-  taskBadge?: number; extraBadge?: number
+  taskBadge?: number; extraBadge?: number; inboxBadge?: number
 }) {
   const pathname = usePathname()
   const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
-  const total = (taskBadge ?? 0) + (extraBadge ?? 0)
+  const total = (taskBadge ?? 0) + (extraBadge ?? 0) + (inboxBadge ?? 0)
   return (
     <Link href={href}
       className={cn(
@@ -114,6 +115,9 @@ export function Sidebar() {
   const pendingExtra = (extraQ.data ?? []).filter(t =>
     t.status === 'pending'
   ).length
+
+  const inboxBadgeQ = useInboxPendingBadge(userId, isLeader)
+  const pendingInbox = inboxBadgeQ.data ?? 0
 
   const nav = isLeader ? LEADER_NAV : MEMBER_NAV
   const name = userName ?? 'User'
@@ -151,6 +155,7 @@ export function Sidebar() {
             <NavItem key={item.href} {...item}
               taskBadge={item.badge && item.href === '/tasks' ? pendingTasks : undefined}
               extraBadge={item.badge && item.href === '/extra-tasks' ? pendingExtra : undefined}
+              inboxBadge={item.badge && item.href === '/inbox' ? pendingInbox : undefined}
             />
           ))}
         </div>

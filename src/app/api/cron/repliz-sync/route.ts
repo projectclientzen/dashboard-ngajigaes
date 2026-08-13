@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runReplizSync, runReplizAccountInsightSync } from '@/lib/server/replizSync'
+import { runIgGraphAccountInsightSync, runIgGraphContentInsightSync } from '@/lib/server/igGraphSync'
 
 // GET — dipanggil scheduler (Vercel Cron / VPS crontab / dll).
-// Jalankan sync content (engagement per-post) + sync account insight IG
-// (snapshot harian) sekaligus.
+// Urutan: Repliz dulu (pelengkap + non-IG), lalu IG Graph API (sumber UTAMA —
+// upsert-nya menang untuk kolom yang overlap karena jalan belakangan).
 // Auth: Bearer PUSH_SEND_SECRET (sama dengan POST /api/repliz/sync, reuse
 // secret internal yang sudah ada — bukan CRON_SECRET terpisah).
 export async function GET(req: NextRequest) {
@@ -18,8 +19,12 @@ export async function GET(req: NextRequest) {
       runReplizSync(),
       runReplizAccountInsightSync(),
     ])
-    console.log('[repliz-sync cron]', { content, insight })
-    return NextResponse.json({ content, insight })
+    const [igAccount, igContent] = await Promise.all([
+      runIgGraphAccountInsightSync(),
+      runIgGraphContentInsightSync(),
+    ])
+    console.log('[repliz-sync cron]', { content, insight, igAccount, igContent })
+    return NextResponse.json({ content, insight, igAccount, igContent })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }

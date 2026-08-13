@@ -252,6 +252,8 @@ export interface AccountInsight {
   total_comments: number | null
   total_saves: number | null
   total_shares: number | null
+  follows_count: number | null      // dari IG Graph API
+  unfollows_count: number | null    // dari IG Graph API
   engagement_rate: number | null    // dihitung backend
   notes: string | null
   brand_id: string

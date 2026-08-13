@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { recordCommentResolved } from '@/lib/queries/inboxMeta'
 
 type RawRow = Record<string, unknown>
 
@@ -79,7 +80,14 @@ export function useReplyComment() {
       if (!res.ok) throw new Error(body?.error ?? `HTTP ${res.status}`)
       return body as { commentId: string; status: CommentStatus; statusError?: string }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['repliz-comments'] }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['repliz-comments'] })
+      if (res.status === 'resolved') {
+        recordCommentResolved(res.commentId).finally(() =>
+          qc.invalidateQueries({ queryKey: ['repliz_comment_meta', 'meta'] })
+        )
+      }
+    },
   })
 }
 
@@ -95,9 +103,16 @@ export function useMarkCommentStatus() {
       })
       const body = await res.json().catch(() => null)
       if (!res.ok) throw new Error(body?.error ?? `HTTP ${res.status}`)
-      return body
+      return body as { commentId: string; status: CommentStatus }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['repliz-comments'] }),
+    onSuccess: (_res, vars) => {
+      qc.invalidateQueries({ queryKey: ['repliz-comments'] })
+      if (vars.status === 'resolved') {
+        recordCommentResolved(vars.commentId).finally(() =>
+          qc.invalidateQueries({ queryKey: ['repliz_comment_meta', 'meta'] })
+        )
+      }
+    },
   })
 }
 

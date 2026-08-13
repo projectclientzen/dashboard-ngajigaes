@@ -1,12 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   useReplizComments, useReplyComment, useMarkCommentStatus, type CommentStatus,
   useReplizChats, useSendChatMessage,
   type ReplizComment, type ReplizChat,
 } from '@/lib/queries/replizInbox'
+import { useInboxMeta, useSetAssignee, type InboxMeta, type MetaTable } from '@/lib/queries/inboxMeta'
+import { useTeamUsers, type UserWithRole } from '@/lib/queries/settings'
+import { useApp } from '@/contexts/AppContext'
 import { formatDateTime, getInitials } from '@/lib/utils'
+
+type AssigneeFilter = 'all' | 'mine' | 'unassigned'
 
 const PLATFORM_LABEL: Record<string, string> = {
   facebook: 'Facebook', instagram: 'Instagram', threads: 'Threads',
@@ -41,6 +46,39 @@ function Avatar({ name, picture }: { name: string; picture: string | null }) {
       style={{ background: avatarColor(name) }}>
       {getInitials(name)}
     </div>
+  )
+}
+
+function AssigneeBadge({ name }: { name: string }) {
+  return (
+    <span className="inline-flex items-center gap-[5px] text-[10px] font-semibold text-white rounded-full pl-[3px] pr-[8px] py-[2px]"
+      style={{ background: avatarColor(name) }}>
+      <span className="w-[16px] h-[16px] rounded-full bg-white/25 flex items-center justify-center text-[8px]">{getInitials(name)}</span>
+      {name}
+    </span>
+  )
+}
+
+function AssignControl({ id, table, meta, teamUsers, currentUserId, isLeader }: {
+  id: string; table: MetaTable; meta: InboxMeta | undefined
+  teamUsers: UserWithRole[]; currentUserId: string | null; isLeader: boolean
+}) {
+  const setAssignee = useSetAssignee(table)
+  const assigneeId = meta?.assigneeId ?? null
+  const canUnassign = isLeader || assigneeId === currentUserId
+
+  return (
+    <select
+      value={assigneeId ?? ''}
+      onChange={e => setAssignee.mutate({ id, assigneeId: e.target.value || null })}
+      disabled={setAssignee.isPending}
+      title={assigneeId ? undefined : 'Assign ke anggota tim'}
+      className="text-[10.5px] font-semibold text-[#5A574C] bg-white border border-[#E3DCC8] rounded-md px-[7px] py-[3px] cursor-pointer focus:outline-none disabled:opacity-50 max-w-[160px]">
+      <option value="" disabled={!!assigneeId && !canUnassign}>
+        {assigneeId ? '— Unassign —' : 'Assign ke...'}
+      </option>
+      {teamUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+    </select>
   )
 }
 
@@ -112,7 +150,10 @@ function PostContext({ content, platform }: { content: ReplizComment['content'];
   )
 }
 
-function CommentCard({ comment }: { comment: ReplizComment }) {
+function CommentCard({ comment, meta, teamUsers, currentUserId, isLeader }: {
+  comment: ReplizComment; meta: InboxMeta | undefined
+  teamUsers: UserWithRole[]; currentUserId: string | null; isLeader: boolean
+}) {
   const replyMut = useReplyComment()
   const markMut = useMarkCommentStatus()
   const [sent, setSent] = useState(false)
@@ -127,6 +168,9 @@ function CommentCard({ comment }: { comment: ReplizComment }) {
     })
   }
 
+  const resolvedByUser = meta?.resolvedBy ? teamUsers.find(u => u.id === meta.resolvedBy) : undefined
+  const assigneeUser = meta?.assigneeId ? teamUsers.find(u => u.id === meta.assigneeId) : undefined
+
   return (
     <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
       <div className="flex items-start gap-3">
@@ -138,6 +182,11 @@ function CommentCard({ comment }: { comment: ReplizComment }) {
               {PLATFORM_LABEL[comment.platform] ?? comment.platform} · {comment.accountName}
             </span>
             {comment.createdAt && <span className="text-[11px] text-[#A89F86]">{formatDateTime(comment.createdAt)}</span>}
+            {assigneeUser && <AssigneeBadge name={assigneeUser.name} />}
+            <div className="ml-auto">
+              <AssignControl id={comment.id} table="repliz_comment_meta" meta={meta} teamUsers={teamUsers}
+                currentUserId={currentUserId} isLeader={isLeader} />
+            </div>
           </div>
           <PostContext content={comment.content} platform={comment.platform} />
           <div className="text-[13px] text-[#3F3D34] mt-[6px]">{comment.text || <em className="text-[#A89F86]">(tanpa teks)</em>}</div>
@@ -161,16 +210,44 @@ function CommentCard({ comment }: { comment: ReplizComment }) {
               </>
             )
           )}
+
+          {comment.status === 'resolved' && resolvedByUser && (
+            <div className="text-[11px] text-[#5E8C61] font-semibold mt-[8px]">
+              ✓ dibalas oleh {resolvedByUser.name}{meta?.resolvedAt ? ` • ${formatDateTime(meta.resolvedAt)}` : ''}
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
+const ASSIGNEE_FILTERS: { value: AssigneeFilter; label: string }[] = [
+  { value: 'all', label: 'Semua' },
+  { value: 'mine', label: 'Milik saya' },
+  { value: 'unassigned', label: 'Belum di-assign' },
+]
+
 function CommentsTab() {
+  const { userId, isLeader } = useApp()
   const [status, setStatus] = useState<CommentStatus>('pending')
   const [page, setPage] = useState(1)
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
   const q = useReplizComments(status, page)
+  const teamUsersQ = useTeamUsers()
+  const teamUsers = teamUsersQ.data ?? []
+
+  const comments = useMemo(() => q.data?.comments ?? [], [q.data])
+  const metaQ = useInboxMeta('repliz_comment_meta', comments.map(c => c.id))
+  const meta = metaQ.data
+
+  const filtered = useMemo(() => {
+    if (assigneeFilter === 'all' || !meta) return comments
+    return comments.filter(c => {
+      const a = meta?.[c.id]?.assigneeId ?? null
+      return assigneeFilter === 'mine' ? a === userId : a === null
+    })
+  }, [comments, meta, assigneeFilter, userId])
 
   function changeStatus(s: CommentStatus) {
     setStatus(s)
@@ -179,17 +256,26 @@ function CommentsTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px] self-start">
-        {(Object.keys(STATUS_META) as CommentStatus[]).map(s => (
-          <button key={s} onClick={() => changeStatus(s)}
-            className={`px-[13px] py-[6px] rounded-md text-[12px] font-semibold cursor-pointer border-none transition-all ${status === s ? 'bg-white text-[#3F5A3E] shadow-sm' : 'bg-transparent text-[#8A8675]'}`}>
-            {STATUS_META[s].label}
-          </button>
-        ))}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px]">
+          {(Object.keys(STATUS_META) as CommentStatus[]).map(s => (
+            <button key={s} onClick={() => changeStatus(s)}
+              className={`px-[13px] py-[6px] rounded-md text-[12px] font-semibold cursor-pointer border-none transition-all ${status === s ? 'bg-white text-[#3F5A3E] shadow-sm' : 'bg-transparent text-[#8A8675]'}`}>
+              {STATUS_META[s].label}
+            </button>
+          ))}
+        </div>
+        <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px]">
+          {ASSIGNEE_FILTERS.map(f => (
+            <button key={f.value} onClick={() => setAssigneeFilter(f.value)}
+              className={`px-[13px] py-[6px] rounded-md text-[12px] font-semibold cursor-pointer border-none transition-all ${assigneeFilter === f.value ? 'bg-white text-[#3F5A3E] shadow-sm' : 'bg-transparent text-[#8A8675]'}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {(() => {
-        const comments = q.data?.comments ?? []
         const hasNextPage = q.data?.hasNextPage ?? false
         if (q.isError) return <ErrorNotice message={(q.error as Error).message} />
         if (!q.data) return <div className="p-8 text-center text-[13px] text-[#9A9279] bg-white border border-[#EBE5D4] rounded-lg">Memuat komentar...</div>
@@ -198,10 +284,18 @@ function CommentsTab() {
             Tidak ada komentar dengan status &quot;{STATUS_META[status].label}&quot;.
           </div>
         )
+        if (filtered.length === 0) return (
+          <div className="p-10 text-center text-[13px] text-[#A89F86] bg-white border border-[#EBE5D4] rounded-lg">
+            Tidak ada komentar yang cocok dengan filter ini di halaman sekarang.
+          </div>
+        )
         return (
           <>
             <div className="flex flex-col gap-3">
-              {comments.map(c => <CommentCard key={c.id} comment={c} />)}
+              {filtered.map(c => (
+                <CommentCard key={c.id} comment={c} meta={meta?.[c.id]} teamUsers={teamUsers}
+                  currentUserId={userId} isLeader={isLeader} />
+              ))}
             </div>
             {hasNextPage && (
               <button onClick={() => setPage(p => p + 1)}
@@ -217,9 +311,13 @@ function CommentsTab() {
 }
 
 // ─── Chat ─────────────────────────────────────────────────────
-function ChatCard({ chat }: { chat: ReplizChat }) {
+function ChatCard({ chat, meta, teamUsers, currentUserId, isLeader }: {
+  chat: ReplizChat; meta: InboxMeta | undefined
+  teamUsers: UserWithRole[]; currentUserId: string | null; isLeader: boolean
+}) {
   const sendMut = useSendChatMessage()
   const [sentText, setSentText] = useState<string | null>(null)
+  const assigneeUser = meta?.assigneeId ? teamUsers.find(u => u.id === meta.assigneeId) : undefined
 
   function handleSend(text: string) {
     sendMut.mutate({ chatId: chat.id, text }, { onSuccess: () => setSentText(text) })
@@ -239,6 +337,11 @@ function ChatCard({ chat }: { chat: ReplizChat }) {
               <span className="text-[10px] font-bold text-white bg-[#C2795A] rounded-full px-[7px] py-[2px]">{chat.unreadCount} baru</span>
             )}
             {chat.lastMessageAt && <span className="text-[11px] text-[#A89F86]">{formatDateTime(chat.lastMessageAt)}</span>}
+            {assigneeUser && <AssigneeBadge name={assigneeUser.name} />}
+            <div className="ml-auto">
+              <AssignControl id={chat.id} table="repliz_chat_meta" meta={meta} teamUsers={teamUsers}
+                currentUserId={currentUserId} isLeader={isLeader} />
+            </div>
           </div>
           <div className="text-[13px] text-[#3F3D34] mt-[6px] truncate">{chat.lastMessageText || <em className="text-[#A89F86]">(tanpa pesan)</em>}</div>
 
@@ -252,21 +355,49 @@ function ChatCard({ chat }: { chat: ReplizChat }) {
 }
 
 function ChatTab() {
+  const { userId, isLeader } = useApp()
   const [page, setPage] = useState(1)
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
   const q = useReplizChats(page)
+  const teamUsersQ = useTeamUsers()
+  const teamUsers = teamUsersQ.data ?? []
+
+  const chats = useMemo(() => q.data?.chats ?? [], [q.data])
+  const metaQ = useInboxMeta('repliz_chat_meta', chats.map(c => c.id))
+  const meta = metaQ.data
+
+  const filtered = useMemo(() => {
+    if (assigneeFilter === 'all' || !meta) return chats
+    return chats.filter(c => {
+      const a = meta?.[c.id]?.assigneeId ?? null
+      return assigneeFilter === 'mine' ? a === userId : a === null
+    })
+  }, [chats, meta, assigneeFilter, userId])
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px] self-start">
+        {ASSIGNEE_FILTERS.map(f => (
+          <button key={f.value} onClick={() => setAssigneeFilter(f.value)}
+            className={`px-[13px] py-[6px] rounded-md text-[12px] font-semibold cursor-pointer border-none transition-all ${assigneeFilter === f.value ? 'bg-white text-[#3F5A3E] shadow-sm' : 'bg-transparent text-[#8A8675]'}`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {(() => {
-        const chats = q.data?.chats ?? []
         const hasNextPage = q.data?.hasNextPage ?? false
         if (q.isError) return <ErrorNotice message={(q.error as Error).message} />
         if (!q.data) return <div className="p-8 text-center text-[13px] text-[#9A9279] bg-white border border-[#EBE5D4] rounded-lg">Memuat chat...</div>
         if (chats.length === 0) return <div className="p-10 text-center text-[13px] text-[#A89F86] bg-white border border-[#EBE5D4] rounded-lg">Belum ada percakapan.</div>
+        if (filtered.length === 0) return <div className="p-10 text-center text-[13px] text-[#A89F86] bg-white border border-[#EBE5D4] rounded-lg">Tidak ada chat yang cocok dengan filter ini di halaman sekarang.</div>
         return (
           <>
             <div className="flex flex-col gap-3">
-              {chats.map(c => <ChatCard key={c.id} chat={c} />)}
+              {filtered.map(c => (
+                <ChatCard key={c.id} chat={c} meta={meta?.[c.id]} teamUsers={teamUsers}
+                  currentUserId={userId} isLeader={isLeader} />
+              ))}
             </div>
             {hasNextPage && (
               <button onClick={() => setPage(p => p + 1)}
