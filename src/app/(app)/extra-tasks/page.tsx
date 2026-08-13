@@ -282,8 +282,8 @@ function LeaderDetailPopup({ task, onClose }: { task: ExtraTask; onClose: () => 
 
 // ── Main Page ────────────────────────────────────────────────
 export default function ExtraTasksPage() {
-  const { userId, isLeader } = useApp()
-  const extraQ   = useExtraTasks(isLeader ? undefined : userId ?? undefined)
+  const { userId, isLeader, brandId, isAllBrands, requireBrandId } = useApp()
+  const extraQ   = useExtraTasks(isLeader ? undefined : userId ?? undefined, brandId)
   const usersQ   = useAllUsers()
   const create   = useCreateExtraTask()
   const updateSt = useUpdateExtraTaskStatus()
@@ -303,6 +303,8 @@ export default function ExtraTasksPage() {
 
   async function handleAdd() {
     setErr('')
+    const bId = requireBrandId()
+    if (!bId) { setErr('Pilih brand dulu (bukan "Semua Brand") untuk beri tugas.'); return }
     if (!form.title || !form.assignee_id) { setErr('Judul dan anggota wajib diisi.'); return }
     try {
       await create.mutateAsync({
@@ -312,6 +314,7 @@ export default function ExtraTasksPage() {
         leader_url: form.leader_url || undefined,
         assignee_id: form.assignee_id,
         created_by: userId!,
+        brand_id: bId,
       })
       setForm({ title: '', note: '', description: '', leader_url: '', assignee_id: '' })
       setSaved(true); setTimeout(() => setSaved(false), 2000)
@@ -343,6 +346,11 @@ export default function ExtraTasksPage() {
       {isLeader && (
         <div className="bg-white border border-[#EBE5D4] rounded-xl p-5 flex flex-col gap-4">
           <h3 className="text-[14px] font-bold text-[#2B2A24]">Beri Tugas Tambahan</h3>
+          {isAllBrands && (
+            <div className="text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+              Mode "Semua Brand" — pilih brand tertentu untuk beri tugas.
+            </div>
+          )}
 
           <div className="flex flex-col gap-[6px]">
             <label className="text-[12px] font-semibold text-[#5A574C]">Judul Tugas</label>
@@ -383,7 +391,7 @@ export default function ExtraTasksPage() {
 
           {err && <div className="text-[12px] text-[#B4452F] bg-[#F7E7E2] border border-[#EAC8BF] rounded-md px-3 py-2">{err}</div>}
           <div className="flex items-center gap-3">
-            <button onClick={handleAdd} disabled={create.isPending}
+            <button onClick={handleAdd} disabled={create.isPending || isAllBrands}
               className="bg-[#5E7A5C] text-white border-none rounded-md px-[18px] py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] disabled:opacity-50 transition-colors">
               {create.isPending ? 'Menyimpan...' : '+ Tambahkan'}
             </button>

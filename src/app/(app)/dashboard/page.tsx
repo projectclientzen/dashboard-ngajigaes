@@ -77,16 +77,17 @@ function TaskRing({ rate, circum, dash }: { rate: number; circum: number; dash: 
 //  LEADER DASHBOARD
 // ══════════════════════════════════════════════════════════
 function LeaderDashboard() {
-  const { userRole, rangeStart, rangeEnd } = useApp()
+  const { userRole, rangeStart, rangeEnd, brandId, isAllBrands } = useApp()
   const canFinancial = canViewFinancial(userRole)
 
-  const tasksQ   = useTasks()
-  const insightQ = useAccountInsights(rangeStart, rangeEnd)
-  const salesQ   = useSalesRecords(rangeStart, rangeEnd)
-  const soldQ    = useProductSold(rangeStart, rangeEnd)
-  const kpiQ     = useAllKpiResults(rangeStart, rangeEnd)
-  const scoresQ  = useProductivityScores(rangeStart, rangeEnd)
-  const reportQ  = useDailyReports(new Date().toISOString().split('T')[0])
+  // brandId 'all' → agregat lintas brand (default dashboard, sesuai D7)
+  const tasksQ   = useTasks(undefined, brandId)
+  const insightQ = useAccountInsights(rangeStart, rangeEnd, brandId)
+  const salesQ   = useSalesRecords(rangeStart, rangeEnd, brandId)
+  const soldQ    = useProductSold(rangeStart, rangeEnd, isAllBrands ? null : brandId)
+  const kpiQ     = useAllKpiResults(rangeStart, rangeEnd, brandId)
+  const scoresQ  = useProductivityScores(rangeStart, rangeEnd, brandId)
+  const reportQ  = useDailyReports(new Date().toISOString().split('T')[0], undefined, brandId)
 
   const tasks    = tasksQ.data ?? []
   const insights = insightQ.data ?? []
@@ -284,14 +285,14 @@ function LeaderDashboard() {
 //  MEMBER DASHBOARD
 // ══════════════════════════════════════════════════════════
 function MemberDashboard() {
-  const { userId, userName, userRole, rangeStart, rangeEnd } = useApp()
+  const { userId, userName, userRole, rangeStart, rangeEnd, brandId, isAllBrands } = useApp()
 
-  const tasksQ   = useTasks(userId ?? undefined)
-  const myScoreQ = useMyScore(userId ?? '', rangeStart, rangeEnd)
-  const insightQ = useAccountInsights(rangeStart, rangeEnd)
-  const kpiQ     = useKpiResults(userId ?? '', rangeStart, rangeEnd)
-  const extraQ   = useExtraTasks(userId ?? undefined)
-  const reportQ  = useDailyReports(new Date().toISOString().split('T')[0])
+  const tasksQ   = useTasks(userId ?? undefined, brandId)
+  const myScoreQ = useMyScore(userId ?? '', rangeStart, rangeEnd, isAllBrands ? '' : brandId)
+  const insightQ = useAccountInsights(rangeStart, rangeEnd, brandId)
+  const kpiQ     = useKpiResults(userId ?? '', rangeStart, rangeEnd, brandId)
+  const extraQ   = useExtraTasks(userId ?? undefined, brandId)
+  const reportQ  = useDailyReports(new Date().toISOString().split('T')[0], undefined, brandId)
 
   const tasks    = tasksQ.data ?? []
   const myScore  = myScoreQ.data

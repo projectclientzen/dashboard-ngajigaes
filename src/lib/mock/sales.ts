@@ -1,5 +1,7 @@
 import type { SalesRecord, ProductSold, Product } from '@/types'
 
+const BRAND = 'brand-ngajigaes'
+
 export const MOCK_PRODUCTS: Product[] = [
   {
     id: 'product-01',
@@ -7,6 +9,7 @@ export const MOCK_PRODUCTS: Product[] = [
     type: 'ebook',
     price: 49000,
     status: 'active',
+    brand_id: BRAND,
   },
   {
     id: 'product-02',
@@ -14,6 +17,7 @@ export const MOCK_PRODUCTS: Product[] = [
     type: 'bundle',
     price: 99000,
     status: 'active',
+    brand_id: BRAND,
   },
   {
     id: 'product-03',
@@ -21,6 +25,7 @@ export const MOCK_PRODUCTS: Product[] = [
     type: 'ecourse',
     price: 199000,
     status: 'active',
+    brand_id: BRAND,
   },
   {
     id: 'product-04',
@@ -28,6 +33,7 @@ export const MOCK_PRODUCTS: Product[] = [
     type: 'audiobook',
     price: 69000,
     status: 'inactive',
+    brand_id: BRAND,
   },
 ]
 
@@ -47,6 +53,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'instagram_organic',
     channel: null,
     notes: null,
+    brand_id: BRAND,
   },
   {
     id: 'sale-02',
@@ -62,6 +69,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'meta_ads',
     channel: 'IG Stories',
     notes: 'Campaign Juli batch 1',
+    brand_id: BRAND,
   },
   {
     id: 'sale-03',
@@ -77,6 +85,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'whatsapp',
     channel: 'Broadcast',
     notes: null,
+    brand_id: BRAND,
   },
   {
     id: 'sale-04',
@@ -92,6 +101,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'telegram',
     channel: 'Channel Ngajigaes',
     notes: null,
+    brand_id: BRAND,
   },
   {
     id: 'sale-05',
@@ -107,6 +117,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'meta_ads',
     channel: 'IG Feed',
     notes: null,
+    brand_id: BRAND,
   },
   {
     id: 'sale-06',
@@ -122,6 +133,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'instagram_organic',
     channel: null,
     notes: null,
+    brand_id: BRAND,
   },
   {
     id: 'sale-07',
@@ -137,6 +149,7 @@ export const MOCK_SALES_RECORDS: SalesRecord[] = [
     source: 'broadcast',
     channel: 'Email',
     notes: 'Flash sale 24 jam',
+    brand_id: BRAND,
   },
 ]
 

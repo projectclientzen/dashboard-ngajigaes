@@ -19,7 +19,8 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'approved',
     task_id: 'task-03',
-    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null, brand_id: 'brand-ngajigaes',
+    reach: null, saved: null, views: null, interaction: null,
   },
   {
     id: 'content-02',
@@ -39,7 +40,8 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: 'Tolong cek musik backgroundnya, harus bebas copyright',
     validation_status: 'waiting_validation',
     task_id: 'task-02',
-    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null, brand_id: 'brand-ngajigaes',
+    reach: null, saved: null, views: null, interaction: null,
   },
   {
     id: 'content-03',
@@ -59,7 +61,8 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'approved',
     task_id: null,
-    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null, brand_id: 'brand-ngajigaes',
+    reach: null, saved: null, views: null, interaction: null,
   },
   {
     id: 'content-04',
@@ -79,7 +82,8 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'not_needed',
     task_id: null,
-    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null, brand_id: 'brand-ngajigaes',
+    reach: null, saved: null, views: null, interaction: null,
   },
   {
     id: 'content-05',
@@ -99,7 +103,8 @@ export const MOCK_CONTENTS: Content[] = [
     curator_notes: null,
     validation_status: 'waiting_validation',
     task_id: null,
-    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null,
+    repliz_schedule_id: null, repliz_status: null, likes: null, comments: null, shares: null, brand_id: 'brand-ngajigaes',
+    reach: null, saved: null, views: null, interaction: null,
   },
 ]
 
@@ -130,6 +135,7 @@ export const MOCK_ACCOUNT_INSIGHTS: AccountInsight[] = INSIGHT_DATA.map((d, i) =
   total_shares: d.shares,
   engagement_rate: d.eng,
   notes: null,
+  brand_id: 'brand-ngajigaes',
 }))
 
 export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
@@ -149,7 +155,7 @@ export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
     dm_generated: 28,
     engagement_rate: 14.4,
     performance_status: 'winner',
-    evaluation_notes: 'Performa sangat baik, saves tinggi menandakan konten berguna.',
+    evaluation_notes: 'Performa sangat baik, saves tinggi menandakan konten berguna.', brand_id: 'brand-ngajigaes',
   },
   {
     id: 'ci-02',
@@ -167,6 +173,6 @@ export const MOCK_CONTENT_INSIGHTS: ContentInsight[] = [
     dm_generated: 2,
     engagement_rate: 6.7,
     performance_status: 'average',
-    evaluation_notes: null,
+    evaluation_notes: null, brand_id: 'brand-ngajigaes',
   },
 ]

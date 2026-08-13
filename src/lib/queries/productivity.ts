@@ -4,19 +4,21 @@ import type { ProductivityScore, ScoreSettings } from '@/types'
 
 type RawRow = Record<string, unknown>
 
-export function useProductivityScores(periodStart: string, periodEnd: string) {
+export function useProductivityScores(periodStart: string, periodEnd: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['productivity-scores', periodStart, periodEnd],
+    queryKey: ['productivity-scores', periodStart, periodEnd, brandId],
     queryFn: async (): Promise<ProductivityScore[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
-      const { data, error } = await sb
+      let q = sb
         .from('productivity_scores')
         .select('*, user:users(name)')
         .eq('period_start', periodStart)
         .eq('period_end', periodEnd)
-        .order('final_score', { ascending: false }) as { data: RawRow[] | null; error: unknown }
+        .order('final_score', { ascending: false })
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q as { data: RawRow[] | null; error: unknown }
 
       if (error) throw error
       return (data ?? []).map((s) => ({
@@ -31,14 +33,15 @@ export function useProductivityScores(periodStart: string, periodEnd: string) {
         initiative_score: s.initiative_score as number | null,
         final_score: s.final_score as number,
         status: s.status as ProductivityScore['status'],
+        brand_id: s.brand_id as string,
       })) as ProductivityScore[]
     },
   })
 }
 
-export function useMyScore(userId: string, periodStart: string, periodEnd: string) {
+export function useMyScore(userId: string, periodStart: string, periodEnd: string, brandId: string) {
   return useQuery({
-    queryKey: ['my-score', userId, periodStart, periodEnd],
+    queryKey: ['my-score', userId, periodStart, periodEnd, brandId],
     queryFn: async (): Promise<ProductivityScore | null> => {
       if (!userId) return null
       const supabase = createClient()
@@ -48,6 +51,7 @@ export function useMyScore(userId: string, periodStart: string, periodEnd: strin
         .from('productivity_scores')
         .select('*, user:users(name)')
         .eq('user_id', userId)
+        .eq('brand_id', brandId)
         .eq('period_start', periodStart)
         .eq('period_end', periodEnd)
         .maybeSingle() as { data: RawRow | null; error: unknown }
@@ -66,9 +70,10 @@ export function useMyScore(userId: string, periodStart: string, periodEnd: strin
         initiative_score: data.initiative_score as number | null,
         final_score: data.final_score as number,
         status: data.status as ProductivityScore['status'],
+        brand_id: data.brand_id as string,
       }
     },
-    enabled: !!userId,
+    enabled: !!userId && !!brandId,
   })
 }
 
@@ -93,9 +98,9 @@ export function useScoreSettings() {
 export function useComputeScore() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ userId, start, end }: { userId: string; start: string; end: string }) => {
+    mutationFn: async ({ userId, start, end, brandId }: { userId: string; start: string; end: string; brandId: string }) => {
       const { error } = await db().rpc('compute_productivity_score', {
-        p_user_id: userId, p_start: start, p_end: end,
+        p_user_id: userId, p_start: start, p_end: end, p_brand_id: brandId,
       })
       if (error) throw error
     },
@@ -107,15 +112,16 @@ export function useUpdateQualityScore() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({
-      userId, periodStart, periodEnd, qualityScore, initiativeScore,
+      userId, brandId, periodStart, periodEnd, qualityScore, initiativeScore,
     }: {
-      userId: string; periodStart: string; periodEnd: string
+      userId: string; brandId: string; periodStart: string; periodEnd: string
       qualityScore: number; initiativeScore: number
     }) => {
       const { error } = await db()
         .from('productivity_scores')
         .update({ quality_score: qualityScore, initiative_score: initiativeScore })
         .eq('user_id', userId)
+        .eq('brand_id', brandId)
         .eq('period_start', periodStart)
         .eq('period_end', periodEnd)
       if (error) throw error

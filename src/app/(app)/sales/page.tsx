@@ -21,12 +21,12 @@ function MetricCard({ label, value, sub }: { label:string; value:string; sub:str
 }
 
 export default function SalesPage() {
-  const { userRole, rangeStart, rangeEnd, isLoading: authLoading } = useApp()
+  const { userRole, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
   const canFinancial = canViewFinancial(userRole)
 
-  const salesQ   = useSalesRecords(rangeStart, rangeEnd)
-  const soldQ    = useProductSold(rangeStart, rangeEnd)
-  const productsQ = useProducts()
+  const salesQ   = useSalesRecords(rangeStart, rangeEnd, brandId)
+  const soldQ    = useProductSold(rangeStart, rangeEnd, isAllBrands ? null : brandId)
+  const productsQ = useProducts(brandId)
   const createSales = useCreateSalesRecord()
 
   const [showModal, setShowModal] = useState(false)
@@ -39,6 +39,8 @@ export default function SalesPage() {
 
   async function handleCreate() {
     setFormErr('')
+    const bId = requireBrandId()
+    if (!bId) { setFormErr('Pilih brand dulu (bukan "Semua Brand") untuk catat omzet.'); return }
     if (!form.product_id || !form.order_count || !form.quantity || !form.product_price) {
       setFormErr('Produk, order, qty, dan harga wajib diisi.'); return
     }
@@ -54,6 +56,7 @@ export default function SalesPage() {
         source: form.source,
         channel: form.channel || undefined,
         notes: form.notes || undefined,
+        brand_id: bId,
       })
       setShowModal(false)
       setForm({ sales_date: new Date().toISOString().split('T')[0], product_id: '', order_count: '', quantity: '', product_price: '', discount: '0', source: 'instagram_organic', channel: '', notes: '' })
@@ -125,8 +128,9 @@ export default function SalesPage() {
         <div className="px-4 py-[14px] flex items-center justify-between border-b border-[#F1ECDC]">
           <div className="text-[13px] font-bold text-[#2B2A24]">Riwayat Penjualan</div>
           {canFinancial && (
-            <button onClick={() => setShowModal(true)}
-              className="bg-[#5E7A5C] text-white border-none rounded-md px-[13px] py-[6px] text-[12px] font-semibold cursor-pointer hover:bg-[#4F6A4D]">
+            <button onClick={() => setShowModal(true)} disabled={isAllBrands}
+              title={isAllBrands ? 'Pilih brand dulu untuk catat omzet' : undefined}
+              className="bg-[#5E7A5C] text-white border-none rounded-md px-[13px] py-[6px] text-[12px] font-semibold cursor-pointer hover:bg-[#4F6A4D] disabled:opacity-40 disabled:cursor-not-allowed">
               + Tambah Penjualan
             </button>
           )}

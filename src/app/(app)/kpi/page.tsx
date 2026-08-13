@@ -26,9 +26,9 @@ const METHOD_LABEL: Record<string, string> = { manual:'Manual', task:'Task', con
 const CATEGORIES = ['Produktivitas','Konten','Sales','Engagement','Reach','Lainnya']
 
 export default function KpiPage() {
-  const { userId, isLeader, rangeStart, rangeEnd, isLoading: authLoading } = useApp()
-  const allQ      = useAllKpiResults(rangeStart, rangeEnd)
-  const kpisQ     = useKpis()
+  const { userId, isLeader, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
+  const allQ      = useAllKpiResults(rangeStart, rangeEnd, brandId)
+  const kpisQ     = useKpis(brandId)
   const usersQ    = useAllUsers()
   const createKpi  = useCreateKpi()
   const updateKpi  = useUpdateKpi()
@@ -55,6 +55,8 @@ export default function KpiPage() {
 
   async function handleCreateKpi() {
     setKpiErr('')
+    const bId = requireBrandId()
+    if (!bId) { setKpiErr('Pilih brand dulu (bukan "Semua Brand") untuk membuat KPI.'); return }
     if (!kpiForm.name || !kpiForm.target_value || !kpiForm.unit) {
       setKpiErr('Nama, target, dan unit wajib diisi.'); return
     }
@@ -68,6 +70,7 @@ export default function KpiPage() {
         weight: parseFloat(kpiForm.weight) || 10,
         period: kpiForm.period,
         calculation_method: kpiForm.calculation_method,
+        brand_id: bId,
         ...(kpiForm.user_id && { user_id: kpiForm.user_id }),
       })
       setShowCreateKpi(false)
@@ -140,6 +143,7 @@ export default function KpiPage() {
         weighted_score: Math.min(100, pct) * (kpi.weight / 100),
         input_type: 'manual',
         notes: resultForm.notes || undefined,
+        brand_id: kpi.brand_id,
       })
       setShowInputResult(false)
       setResultForm({ kpi_id: '', user_id: '', actual_value: '', notes: '' })
@@ -171,13 +175,19 @@ export default function KpiPage() {
               className="bg-[#EFEAD9] text-[#5A574C] border-none rounded-md px-[14px] py-[7px] text-[12px] font-semibold cursor-pointer hover:bg-[#E3DCC8]">
               + Input Nilai
             </button>
-            <button onClick={() => setShowCreateKpi(true)}
-              className="bg-[#5E7A5C] text-white border-none rounded-md px-[14px] py-[7px] text-[12px] font-semibold cursor-pointer hover:bg-[#4F6A4D]">
+            <button onClick={() => setShowCreateKpi(true)} disabled={isAllBrands}
+              title={isAllBrands ? 'Pilih brand dulu untuk membuat KPI' : undefined}
+              className="bg-[#5E7A5C] text-white border-none rounded-md px-[14px] py-[7px] text-[12px] font-semibold cursor-pointer hover:bg-[#4F6A4D] disabled:opacity-40 disabled:cursor-not-allowed">
               + Buat KPI
             </button>
           </div>
         )}
       </div>
+      {isAllBrands && isLeader && (
+        <div className="text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+          Mode "Semua Brand" — pilih brand tertentu untuk membuat KPI baru. Input nilai tetap bisa untuk KPI brand manapun.
+        </div>
+      )}
 
       {/* Results tab */}
       {tab === 'results' && (

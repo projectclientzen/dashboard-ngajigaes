@@ -97,11 +97,12 @@ function NavItem({ href, label, icon, taskBadge, extraBadge }: {
 export function Sidebar() {
   const router = useRouter()
   const qc = useQueryClient()
-  const { userId, userRole, userName, isLoading, isLeader } = useApp()
+  const { userId, userRole, userName, isLoading, isLeader, brand, isAllBrands, brandId } = useApp()
 
   // Badge data — status set HARUS sama dengan dropdown notif di Header
-  const tasksQ  = useTasks(undefined)
-  const extraQ  = useExtraTasks(isLeader ? undefined : userId ?? undefined)
+  // brandId 'all' → badge total lintas brand; brand konkret → badge brand itu saja
+  const tasksQ  = useTasks(undefined, brandId)
+  const extraQ  = useExtraTasks(isLeader ? undefined : userId ?? undefined, brandId)
 
   const pendingTasks = (tasksQ.data ?? []).filter(t =>
     t.assignee_id === userId && ['backlog','todo','in_progress','revision'].includes(t.status)
@@ -124,11 +125,18 @@ export function Sidebar() {
 
   return (
     <aside className="w-[236px] flex-shrink-0 h-full bg-[#FCF8EC] border-r border-[#E7E0CC] flex flex-col py-[18px] px-[14px]">
-      <div className="flex items-center gap-[9px] px-2 pb-4">
+      <div className="flex items-center gap-[9px] px-2 pb-2">
         <div className="w-[30px] h-[30px] rounded-lg bg-[#7E997B] flex items-center justify-center text-[#FCF8EC] font-['Bitter'] font-bold text-[17px]">N</div>
         <div className="font-['Bitter'] font-bold text-[19px] text-[#5E7A5C] tracking-tight">
           NgajiGaes<span className="text-[#C2795A]">.</span>
         </div>
+      </div>
+      {/* CTX-4: badge brand aktif */}
+      <div className="flex items-center gap-[6px] px-[10px] mb-3">
+        <span className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: isAllBrands ? '#7E997B' : (brand?.color ?? '#7E997B') }} />
+        <span className="text-[11px] font-semibold text-[#8A8267] truncate">
+          {isAllBrands ? 'Semua Brand' : (brand?.name ?? '—')}
+        </span>
       </div>
 
       {nav.map(section => (

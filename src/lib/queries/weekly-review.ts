@@ -4,16 +4,16 @@ import type { WeeklyReview } from '@/types'
 
 type RawRow = Record<string, unknown>
 
-export function useWeeklyReviews() {
+export function useWeeklyReviews(brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['weekly-reviews'],
+    queryKey: ['weekly-reviews', brandId],
     queryFn: async (): Promise<WeeklyReview[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
-        .from('weekly_reviews')
-        .select('*')
-        .order('period_start', { ascending: false }) as { data: RawRow[] | null; error: unknown }
+      const sb = supabase as any
+      let q = sb.from('weekly_reviews').select('*').order('period_start', { ascending: false })
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q as { data: RawRow[] | null; error: unknown }
       if (error) throw error
       return (data ?? []).map((r) => ({
         id: r.id as string,
@@ -26,6 +26,7 @@ export function useWeeklyReviews() {
         main_problem: r.main_problem as string | null,
         leader_notes: r.leader_notes as string | null,
         decision: r.decision as string | null,
+        brand_id: r.brand_id as string,
       }))
     },
   })
@@ -42,6 +43,7 @@ export function useUpsertWeeklyReview() {
       leader_notes?: string
       decision?: string
       created_by?: string
+      brand_id: string
     }) => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

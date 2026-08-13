@@ -14,15 +14,16 @@ export interface ExtraTask {
   created_by: string
   created_by_name: string
   status: 'pending' | 'in_progress' | 'done'
+  brand_id: string
   created_at: string
   updated_at: string
 }
 
 type RawRow = Record<string, unknown>
 
-export function useExtraTasks(assigneeId?: string) {
+export function useExtraTasks(assigneeId?: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['extra-tasks', assigneeId],
+    queryKey: ['extra-tasks', assigneeId, brandId],
     queryFn: async (): Promise<ExtraTask[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +33,7 @@ export function useExtraTasks(assigneeId?: string) {
         .select('*')
         .order('created_at', { ascending: false })
       if (assigneeId) q = q.eq('assignee_id', assigneeId)
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
       const { data, error } = await q as { data: RawRow[] | null; error: unknown }
       if (error) throw error
       return (data ?? []).map(r => ({
@@ -47,6 +49,7 @@ export function useExtraTasks(assigneeId?: string) {
         created_by: r.created_by as string,
         created_by_name: r.created_by_name as string,
         status: r.status as ExtraTask['status'],
+        brand_id: r.brand_id as string,
         created_at: r.created_at as string,
         updated_at: r.updated_at as string,
       }))
@@ -64,6 +67,7 @@ export function useCreateExtraTask() {
       leader_url?: string
       assignee_id: string
       created_by: string
+      brand_id: string
     }) => {
       const { error } = await db().from('extra_tasks').insert(payload)
       if (error) throw error

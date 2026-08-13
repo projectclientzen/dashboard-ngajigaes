@@ -40,8 +40,8 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 export default function InstagramInsightPage() {
-  const { rangeStart, rangeEnd } = useApp()
-  const insightsQ = useAccountInsights(rangeStart, rangeEnd)
+  const { rangeStart, rangeEnd, brandId, isAllBrands, requireBrandId } = useApp()
+  const insightsQ = useAccountInsights(rangeStart, rangeEnd, brandId)
   const upsert    = useUpsertAccountInsight()
 
   const [showForm, setShowForm] = useState(false)
@@ -77,11 +77,14 @@ export default function InstagramInsightPage() {
 
   async function handleSave() {
     setErr('')
+    const bId = requireBrandId()
+    if (!bId) { setErr('Pilih brand dulu (bukan "Semua Brand") untuk input insight.'); return }
     if (!form.insight_date) { setErr('Tanggal wajib diisi.'); return }
     const num = (v: string) => v ? parseInt(v) : undefined
     try {
       await upsert.mutateAsync({
         insight_date: form.insight_date,
+        brand_id: bId,
         followers:     num(form.followers),
         reach:         num(form.reach),
         impressions:   num(form.impressions),
@@ -133,8 +136,9 @@ export default function InstagramInsightPage() {
         <h3 className="text-[13px] font-bold text-[#2B2A24]">Riwayat Insight ({insights.length} hari)</h3>
         <div className="flex items-center gap-2">
           {saved && <span className="text-[12px] text-[#5E8C61] font-semibold">✓ Tersimpan</span>}
-          <button onClick={() => setShowForm(true)}
-            className="bg-[#5E7A5C] text-white border-none rounded-md px-[14px] py-[7px] text-[12px] font-semibold cursor-pointer hover:bg-[#4F6A4D]">
+          <button onClick={() => setShowForm(true)} disabled={isAllBrands}
+            title={isAllBrands ? 'Pilih brand dulu untuk input insight' : undefined}
+            className="bg-[#5E7A5C] text-white border-none rounded-md px-[14px] py-[7px] text-[12px] font-semibold cursor-pointer hover:bg-[#4F6A4D] disabled:opacity-40 disabled:cursor-not-allowed">
             + Input Insight
           </button>
         </div>

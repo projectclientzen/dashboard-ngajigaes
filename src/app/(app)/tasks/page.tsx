@@ -52,9 +52,9 @@ function Skeleton() {
 const inputCls = 'border border-[#E3DCC8] rounded-md px-3 py-[9px] text-[13px] bg-[#FCFAF2] text-[#2B2A24] focus:outline-none focus:border-[#7E997B] transition-colors w-full'
 
 export default function TasksPage() {
-  const { userId, isLeader, isLoading: authLoading } = useApp()
-  // Fix #4: semua tim lihat semua tasks (antar departemen)
-  const tasksQ     = useTasks(undefined)
+  const { userId, isLeader, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
+  // Fix #4: semua tim lihat semua tasks (antar departemen), difilter brand aktif
+  const tasksQ     = useTasks(undefined, brandId)
   const usersQ     = useAllUsers()
   const updateStatus = useUpdateTaskStatus()
   const updateTask   = useUpdateTask()
@@ -96,6 +96,8 @@ export default function TasksPage() {
 
   async function handleCreate() {
     setFormErr('')
+    const bId = requireBrandId()
+    if (!bId) { setFormErr('Pilih brand dulu (bukan "Semua Brand") untuk membuat task.'); return }
     if (!form.title || !form.assignee_id) { setFormErr('Judul dan PIC wajib diisi.'); return }
     try {
       await createTask.mutateAsync({
@@ -105,6 +107,7 @@ export default function TasksPage() {
         assignee_id: form.assignee_id,
         created_by: userId!,
         priority: form.priority,
+        brand_id: bId,
         ...(form.deadline && { deadline: form.deadline }),
       })
       setShowCreate(false)
@@ -178,11 +181,17 @@ export default function TasksPage() {
           <button className={segBtn(view === 'kanban')} onClick={() => setView('kanban')}>Kanban</button>
           <button className={segBtn(view === 'table')} onClick={() => setView('table')}>Tabel</button>
         </div>
-        <button onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors">
+        <button onClick={() => setShowCreate(true)} disabled={isAllBrands}
+          title={isAllBrands ? 'Pilih brand dulu untuk membuat task' : undefined}
+          className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           + Buat Task
         </button>
       </div>
+      {isAllBrands && (
+        <div className="text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+          Mode "Semua Brand" — pilih brand tertentu di kanan atas untuk membuat task baru.
+        </div>
+      )}
 
       {tasks.length === 0 && (
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 flex flex-col items-center gap-3 text-center">

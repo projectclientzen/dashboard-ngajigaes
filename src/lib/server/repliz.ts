@@ -94,10 +94,11 @@ export async function getSchedule(id: string) {
   return replizFetch<Record<string, unknown>>(`/schedule/${id}`)
 }
 
-/** Statistik engagement konten (likes, comments, shares) */
-export async function getContentStatistic(params: Record<string, string> = {}) {
-  const qs = new URLSearchParams(params).toString()
-  return replizFetch<Record<string, unknown>>(`/content/statistic${qs ? `?${qs}` : ''}`)
+/** Statistik engagement konten (like, comment, share, reach, saved, views, interaction) */
+export async function getContentStatistic(contentId: string, accountId: string) {
+  return replizFetch<Record<string, unknown>>(
+    `/content/${contentId}/statistic?accountId=${accountId}`
+  )
 }
 
 /** List konten published di Repliz */

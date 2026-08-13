@@ -13,6 +13,15 @@
 
 export type Role = 'leader' | 'feed_socmed' | 'reels_ads' | 'curator'
 
+export interface Brand {
+  id: string
+  name: string
+  slug: string
+  color: string
+  logo_url: string | null
+  status: 'active' | 'inactive'
+}
+
 export type TaskStatus =
   | 'backlog'
   | 'todo'
@@ -121,6 +130,7 @@ export interface Task {
   is_overdue: boolean           // dihitung backend, WIB
   result_link: string | null
   revision_notes: string | null
+  brand_id: string
   created_at: string
   updated_at: string
 }
@@ -149,6 +159,7 @@ export interface DailyReport {
   proof_url: string | null
   kpi_entries: { kpi_id: string; qty: number }[]
   created_at: string
+  brand_id: string
 }
 
 export interface Kpi {
@@ -164,6 +175,7 @@ export interface Kpi {
   period: KpiPeriod
   calculation_method: KpiCalculationMethod
   is_active: boolean
+  brand_id: string
 }
 
 export interface KpiResult {
@@ -176,6 +188,7 @@ export interface KpiResult {
   actual_value: number
   achievement_percentage: number  // bisa > 100
   weighted_score: number          // achievement di-cap 100, lalu x bobot
+  brand_id: string
 }
 
 export interface ProductivityScore {
@@ -190,6 +203,7 @@ export interface ProductivityScore {
   initiative_score: number | null // manual input
   final_score: number
   status: ScoreStatus
+  brand_id: string
 }
 
 export interface Content {
@@ -216,6 +230,11 @@ export interface Content {
   likes: number | null
   comments: number | null
   shares: number | null
+  reach: number | null
+  saved: number | null
+  views: number | null
+  interaction: number | null
+  brand_id: string
 }
 
 export interface AccountInsight {
@@ -234,6 +253,7 @@ export interface AccountInsight {
   total_shares: number | null
   engagement_rate: number | null    // dihitung backend
   notes: string | null
+  brand_id: string
 }
 
 export interface ContentInsight {
@@ -253,6 +273,7 @@ export interface ContentInsight {
   engagement_rate: number | null    // dihitung backend
   performance_status: PerformanceStatus | null
   evaluation_notes: string | null
+  brand_id: string
 }
 
 export interface Product {
@@ -261,6 +282,7 @@ export interface Product {
   type: ProductType
   price: number
   status: 'active' | 'inactive'
+  brand_id: string
 }
 
 // Leader only — query langsung ke sales_records via RLS
@@ -278,6 +300,7 @@ export interface SalesRecord {
   source: SalesSource
   channel: string | null
   notes: string | null
+  brand_id: string
 }
 
 // Tim — dari RPC get_product_sold, TANPA kolom uang
@@ -301,6 +324,7 @@ export interface WeeklyReview {
   main_problem: string | null
   leader_notes: string | null
   decision: string | null
+  brand_id: string
 }
 
 export interface ActionPlan {
@@ -314,6 +338,7 @@ export interface ActionPlan {
   priority: Priority
   status: TaskStatus
   converted_task_id: string | null
+  brand_id: string
 }
 
 // ─── DASHBOARD SUMMARIES ─────────────────────────────────────

@@ -7,6 +7,7 @@ import { cn, getInitials, formatDate } from '@/lib/utils'
 import { useApp, type DateRange } from '@/contexts/AppContext'
 import { useTasks } from '@/lib/queries/tasks'
 import { useExtraTasks } from '@/lib/queries/extra-tasks'
+import { BrandSwitcher } from './BrandSwitcher'
 
 const PAGE_TITLES: Record<string, [string, string]> = {
   '/dashboard':           ['Dashboard',            'Ringkasan performa tim NgajiGaes'],
@@ -52,7 +53,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function Header() {
   const pathname  = usePathname()
   const router    = useRouter()
-  const { userId, userName, isLeader, dateRange, setDateRange, customStart, customEnd, setCustomStart, setCustomEnd } = useApp()
+  const { userId, userName, isLeader, brandId, dateRange, setDateRange, customStart, customEnd, setCustomStart, setCustomEnd } = useApp()
   const [title, subtitle] = PAGE_TITLES[pathname] ?? ['Dashboard', '']
   const showPeriod = PERIOD_PAGES.has(pathname)
 
@@ -74,9 +75,9 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handler)
   }, [notifOpen])
 
-  // Notif data: tasks assigned to user + extra tasks pending (leader: semua)
-  const tasksQ = useTasks(undefined)
-  const extraQ = useExtraTasks(isLeader ? undefined : userId ?? undefined)
+  // Notif data: tasks assigned to user + extra tasks pending (leader: semua), ikut brand aktif
+  const tasksQ = useTasks(undefined, brandId)
+  const extraQ = useExtraTasks(isLeader ? undefined : userId ?? undefined, brandId)
 
   // Status "perlu dikerjakan" — HARUS sama dengan set di Sidebar agar badge konsisten
   const pendingTasks = (tasksQ.data ?? []).filter(t =>
@@ -213,6 +214,7 @@ export function Header() {
                 className="border border-[#E3DCC8] rounded-md px-[8px] py-[5px] text-[12px] bg-white text-[#3F3D34] focus:outline-none focus:border-[#7E997B]"/>
             </div>
           )}
+          <BrandSwitcher />
           <NotifBell />
           <div className="w-px h-[26px] bg-[#E7E0CC]" />
           <div className="flex items-center gap-2 py-[5px] px-[10px] pl-[6px] border border-[#E7E0CC] rounded-lg bg-white">
@@ -242,11 +244,12 @@ export function Header() {
             </div>
           </div>
         </div>
-        <div className="px-[16px] pb-[11px] flex items-end justify-between">
-          <div>
+        <div className="px-[16px] pb-[11px] flex items-end justify-between gap-3">
+          <div className="min-w-0">
             <div className="text-[19px] font-bold text-[#2B2A24] tracking-[-0.015em] leading-[1.1]">{title}</div>
             <div className="text-[12px] text-[#9A9279] mt-[2px]">{subtitle}</div>
           </div>
+          <BrandSwitcher compact />
         </div>
         {showPeriod && (
           <div className="px-[16px] pb-[10px]">

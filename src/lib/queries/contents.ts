@@ -4,9 +4,9 @@ import type { Content, ContentStatus, ContentFormat, ContentObjective, Validatio
 
 type RawRow = Record<string, unknown>
 
-export function useContents(start?: string, end?: string) {
+export function useContents(start?: string, end?: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['contents', start, end],
+    queryKey: ['contents', start, end, brandId],
     queryFn: async (): Promise<Content[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,6 +18,7 @@ export function useContents(start?: string, end?: string) {
 
       if (start) q = q.gte('publish_date', start)
       if (end) q = q.lte('publish_date', end)
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
 
       const { data, error } = await q as { data: RawRow[] | null; error: unknown }
       if (error) throw error
@@ -45,6 +46,11 @@ export function useContents(start?: string, end?: string) {
         likes: (c.likes as number | null) ?? null,
         comments: (c.comments as number | null) ?? null,
         shares: (c.shares as number | null) ?? null,
+        reach: (c.reach as number | null) ?? null,
+        saved: (c.saved as number | null) ?? null,
+        views: (c.views as number | null) ?? null,
+        interaction: (c.interaction as number | null) ?? null,
+        brand_id: c.brand_id as string,
       }))
     },
   })
@@ -65,6 +71,7 @@ export function useCreateContent() {
       hook?: string
       cta?: string
       asset_link?: string
+      brand_id: string
     }) => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -42,12 +42,21 @@ function ScoreBar({ label, value }: { label: string; value: number | null }) {
 }
 
 export default function MyPerformancePage() {
-  const { userId, isLeader, rangeStart, rangeEnd, isLoading: authLoading } = useApp()
-  const myScoreQ   = useMyScore(userId ?? '', rangeStart, rangeEnd)
-  const allScoresQ = useProductivityScores(rangeStart, rangeEnd)
+  const { userId, isLeader, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands } = useApp()
+  const myScoreQ   = useMyScore(userId ?? '', rangeStart, rangeEnd, isAllBrands ? '' : brandId)
+  const allScoresQ = useProductivityScores(rangeStart, rangeEnd, brandId)
 
   if (authLoading || myScoreQ.isLoading) {
     return <div className="animate-pulse h-64 bg-[#F0EBDA] rounded-lg"/>
+  }
+
+  if (isAllBrands) {
+    return (
+      <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 text-center">
+        <div className="text-[15px] font-bold text-[#2B2A24] mb-1">Pilih brand untuk lihat performa</div>
+        <div className="text-[13px] text-[#9A9279]">Skor produktivitas dihitung per brand — pilih salah satu brand di kanan atas.</div>
+      </div>
+    )
   }
 
   const score    = myScoreQ.data

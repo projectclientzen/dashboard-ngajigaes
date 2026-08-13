@@ -1,5 +1,7 @@
 import type { Task, TaskComment } from '@/types'
 
+const BRAND = 'brand-ngajigaes'
+
 // Fixed dates — hindari Date.now() agar tidak ada hydration mismatch
 const D = {
   past14: '2026-06-12T00:00:00Z',
@@ -33,6 +35,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.past3,
     updated_at: D.past1,
+    brand_id: BRAND,
   },
   {
     id: 'task-02',
@@ -51,6 +54,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.past5,
     updated_at: D.today,
+    brand_id: BRAND,
   },
   {
     id: 'task-03',
@@ -69,6 +73,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.past14,
     updated_at: D.past7,
+    brand_id: BRAND,
   },
   {
     id: 'task-04',
@@ -87,6 +92,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.past1,
     updated_at: D.past1,
+    brand_id: BRAND,
   },
   {
     id: 'task-05',
@@ -105,6 +111,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.today,
     updated_at: D.today,
+    brand_id: BRAND,
   },
   {
     id: 'task-06',
@@ -123,6 +130,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: 'Font heading terlalu kecil, ukuran minimal 36pt untuk judul',
     created_at: D.past2,
     updated_at: D.today,
+    brand_id: BRAND,
   },
   {
     id: 'task-07',
@@ -141,6 +149,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.past5,
     updated_at: D.past5,
+    brand_id: BRAND,
   },
   {
     id: 'task-08',
@@ -159,6 +168,7 @@ export const MOCK_TASKS: Task[] = [
     revision_notes: null,
     created_at: D.past14,
     updated_at: D.past14,
+    brand_id: BRAND,
   },
 ]
 

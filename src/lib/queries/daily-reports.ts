@@ -3,10 +3,10 @@ import { createClient, db } from '@/lib/supabase/client'
 import { todayJakarta } from '@/lib/utils'
 import type { DailyReport } from '@/types'
 
-export function useDailyReports(date?: string, userId?: string) {
+export function useDailyReports(date?: string, userId?: string, brandId?: string | 'all') {
   const targetDate = date ?? todayJakarta()
   return useQuery({
-    queryKey: ['daily-reports', targetDate, userId],
+    queryKey: ['daily-reports', targetDate, userId, brandId],
     queryFn: async (): Promise<DailyReport[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -18,6 +18,7 @@ export function useDailyReports(date?: string, userId?: string) {
         .order('created_at', { ascending: false })
 
       if (userId) query = query.eq('user_id', userId)
+      if (brandId && brandId !== 'all') query = query.eq('brand_id', brandId)
 
       const { data, error } = await query as { data: Record<string, unknown>[] | null; error: unknown }
       if (error) throw error
@@ -37,6 +38,7 @@ export function useDailyReports(date?: string, userId?: string) {
         proof_url: r.proof_url as string | null,
         kpi_entries: (r.kpi_entries as { kpi_id: string; qty: number }[] | null) ?? [],
         created_at: r.created_at as string,
+        brand_id: r.brand_id as string,
       })) as DailyReport[]
     },
   })
@@ -73,6 +75,7 @@ export function useUpsertDailyReport() {
       work_link?: string
       proof_url?: string
       kpi_entries?: { kpi_id: string; qty: number }[]
+      brand_id: string
     }) => {
       // INSERT (bukan upsert) — tiap submit = entri baru yang menumpuk dalam hari yang sama
       const { error } = await db().from('daily_reports').insert(report)

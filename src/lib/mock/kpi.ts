@@ -1,5 +1,7 @@
 import type { Kpi, KpiResult, ProductivityScore, ScoreSettings } from '@/types'
 
+const BRAND = 'brand-ngajigaes'
+
 export const MOCK_KPIS: Kpi[] = [
   {
     id: 'kpi-01',
@@ -14,6 +16,7 @@ export const MOCK_KPIS: Kpi[] = [
     period: 'weekly',
     calculation_method: 'content',
     is_active: true,
+    brand_id: BRAND,
   },
   {
     id: 'kpi-02',
@@ -28,6 +31,7 @@ export const MOCK_KPIS: Kpi[] = [
     period: 'weekly',
     calculation_method: 'task',
     is_active: true,
+    brand_id: BRAND,
   },
   {
     id: 'kpi-03',
@@ -42,6 +46,7 @@ export const MOCK_KPIS: Kpi[] = [
     period: 'weekly',
     calculation_method: 'content',
     is_active: true,
+    brand_id: BRAND,
   },
   {
     id: 'kpi-04',
@@ -56,6 +61,7 @@ export const MOCK_KPIS: Kpi[] = [
     period: 'weekly',
     calculation_method: 'instagram',
     is_active: true,
+    brand_id: BRAND,
   },
   {
     id: 'kpi-05',
@@ -70,6 +76,7 @@ export const MOCK_KPIS: Kpi[] = [
     period: 'weekly',
     calculation_method: 'content',
     is_active: true,
+    brand_id: BRAND,
   },
 ]
 
@@ -88,6 +95,7 @@ export const MOCK_KPI_RESULTS: KpiResult[] = [
     actual_value: 4,
     achievement_percentage: 80,
     weighted_score: 24,
+    brand_id: BRAND,
   },
   {
     kpi_id: 'kpi-02',
@@ -99,6 +107,7 @@ export const MOCK_KPI_RESULTS: KpiResult[] = [
     actual_value: 7,
     achievement_percentage: 87.5,
     weighted_score: 21.9,
+    brand_id: BRAND,
   },
   {
     kpi_id: 'kpi-03',
@@ -110,6 +119,7 @@ export const MOCK_KPI_RESULTS: KpiResult[] = [
     actual_value: 2,
     achievement_percentage: 66.7,
     weighted_score: 23.3,
+    brand_id: BRAND,
   },
   {
     kpi_id: 'kpi-04',
@@ -121,6 +131,7 @@ export const MOCK_KPI_RESULTS: KpiResult[] = [
     actual_value: 4.2,
     achievement_percentage: 100,
     weighted_score: 25,
+    brand_id: BRAND,
   },
   {
     kpi_id: 'kpi-05',
@@ -132,6 +143,7 @@ export const MOCK_KPI_RESULTS: KpiResult[] = [
     actual_value: 9,
     achievement_percentage: 90,
     weighted_score: 36,
+    brand_id: BRAND,
   },
 ]
 
@@ -148,6 +160,7 @@ export const MOCK_PRODUCTIVITY_SCORES: ProductivityScore[] = [
     initiative_score: 80,
     final_score: 85.8,
     status: 'good',
+    brand_id: BRAND,
   },
   {
     user_id: 'user-reels-01',
@@ -161,6 +174,7 @@ export const MOCK_PRODUCTIVITY_SCORES: ProductivityScore[] = [
     initiative_score: 70,
     final_score: 68.3,
     status: 'warning',
+    brand_id: BRAND,
   },
   {
     user_id: 'user-curator-01',
@@ -174,6 +188,7 @@ export const MOCK_PRODUCTIVITY_SCORES: ProductivityScore[] = [
     initiative_score: 85,
     final_score: 90.5,
     status: 'excellent',
+    brand_id: BRAND,
   },
 ]
 

@@ -21,8 +21,8 @@ function statusMeta(status: string) {
 }
 
 export default function TeamPerformancePage() {
-  const { isLeader, rangeStart, rangeEnd, isLoading: authLoading } = useApp()
-  const scoresQ = useProductivityScores(rangeStart, rangeEnd)
+  const { isLeader, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, brands } = useApp()
+  const scoresQ = useProductivityScores(rangeStart, rangeEnd, brandId)
 
   if (!isLeader) {
     return (
@@ -71,7 +71,18 @@ export default function TeamPerformancePage() {
                         <div className="w-7 h-7 rounded-[7px] flex items-center justify-center text-[10px] font-semibold text-white" style={{ background: bg }}>
                           {getInitials(sc.user_name)}
                         </div>
-                        <div className="font-semibold text-[#2B2A24]">{sc.user_name}</div>
+                        <div>
+                          <div className="font-semibold text-[#2B2A24]">{sc.user_name}</div>
+                          {isAllBrands && (() => {
+                            const b = brands.find(x => x.id === sc.brand_id)
+                            return b ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-[#8A8267] mt-[1px]">
+                                <span className="w-[6px] h-[6px] rounded-full" style={{ background: b.color }}/>
+                                {b.name}
+                              </span>
+                            ) : null
+                          })()}
+                        </div>
                       </div>
                     </td>
                     {[sc.task_completion_score, sc.deadline_accuracy_score, sc.kpi_score,

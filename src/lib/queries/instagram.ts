@@ -4,17 +4,21 @@ import type { AccountInsight, ContentInsight } from '@/types'
 
 type RawRow = Record<string, unknown>
 
-export function useAccountInsights(start: string, end: string) {
+export function useAccountInsights(start: string, end: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['account-insights', start, end],
+    queryKey: ['account-insights', start, end, brandId],
     queryFn: async (): Promise<AccountInsight[]> => {
       const supabase = createClient()
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any
+      let q = sb
         .from('account_insight_view')
         .select('*')
         .gte('insight_date', start)
         .lte('insight_date', end)
         .order('insight_date', { ascending: true })
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q as { data: RawRow[] | null; error: unknown }
       if (error) throw error
       return (data ?? []).map((d) => ({
         id: (d as RawRow).id as string,
@@ -32,24 +36,27 @@ export function useAccountInsights(start: string, end: string) {
         total_shares: (d as RawRow).total_shares as number | null,
         engagement_rate: (d as RawRow).engagement_rate as number | null,
         notes: (d as RawRow).notes as string | null,
+        brand_id: (d as RawRow).brand_id as string,
       })) as AccountInsight[]
     },
   })
 }
 
-export function useContentInsights(start: string, end: string) {
+export function useContentInsights(start: string, end: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['content-insights', start, end],
+    queryKey: ['content-insights', start, end, brandId],
     queryFn: async (): Promise<ContentInsight[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
-      const { data, error } = await sb
+      let q = sb
         .from('content_insight_view')
         .select('*, content:contents(title)')
         .gte('insight_date', start)
         .lte('insight_date', end)
-        .order('reach', { ascending: false }) as { data: RawRow[] | null; error: unknown }
+        .order('reach', { ascending: false })
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q as { data: RawRow[] | null; error: unknown }
 
       if (error) throw error
       return (data ?? []).map((c) => ({
@@ -69,6 +76,7 @@ export function useContentInsights(start: string, end: string) {
         engagement_rate: c.engagement_rate as number | null,
         performance_status: c.performance_status as ContentInsight['performance_status'],
         evaluation_notes: c.evaluation_notes as string | null,
+        brand_id: c.brand_id as string,
       })) as ContentInsight[]
     },
   })
@@ -82,10 +90,11 @@ export function useUpsertAccountInsight() {
       impressions?: number; profile_visits?: number; link_clicks?: number
       dm_count?: number; total_likes?: number; total_comments?: number
       total_saves?: number; total_shares?: number; notes?: string
+      brand_id: string
     }) => {
       const { error } = await db()
         .from('instagram_account_insights')
-        .upsert(insight, { onConflict: 'insight_date' })
+        .upsert(insight, { onConflict: 'insight_date,brand_id' })
       if (error) throw error
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['account-insights'] }),

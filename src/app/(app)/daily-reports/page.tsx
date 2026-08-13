@@ -73,11 +73,11 @@ function avatarColor(name: string) {
 interface KpiEntry { kpi_id: string; qty: string }
 
 export default function DailyReportsPage() {
-  const { userId, isLeader, isLoading: authLoading } = useApp()
+  const { userId, isLeader, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
   const today = todayJakarta()
 
-  const reportsQ  = useDailyReports(today, isLeader ? undefined : userId ?? undefined)
-  const kpisQ     = useKpis()
+  const reportsQ  = useDailyReports(today, isLeader ? undefined : userId ?? undefined, brandId)
+  const kpisQ     = useKpis(brandId)
   const upsert    = useUpsertDailyReport()
   const deleteReport = useDeleteDailyReport()
   const upsertKpi = useUpsertKpiResult()
@@ -145,7 +145,7 @@ export default function DailyReportsPage() {
     setKpiEntries(prev => prev.map((e, idx) => idx === i ? { ...e, [field]: val } : e))
   }
 
-  const syncKpi = useCallback(async (kpiIds: string[]) => {
+  const syncKpi = useCallback(async (kpiIds: string[], brand_id: string) => {
     if (!userId) return
     // Per KPI: akumulasi qty dari daily reports dalam PERIODE KALENDER KPI itu
     // (bulan/minggu/hari berjalan — stabil, bukan rolling window yang bergeser tiap hari)
@@ -153,7 +153,7 @@ export default function DailyReportsPage() {
       const kpi = (kpisQ.data ?? []).find(k => k.id === kpiId)
       if (!kpi) continue
       const bounds = kpiPeriodBounds(kpi.period)
-      const accumulated = await fetchDailyKpiEntries(userId, bounds.start, bounds.end)
+      const accumulated = await fetchDailyKpiEntries(userId, bounds.start, bounds.end, brand_id)
       const qty = accumulated.find(e => e.kpi_id === kpiId)?.qty ?? 0
       if (qty <= 0) continue
       const pct = (qty / kpi.target_value) * 100
@@ -167,6 +167,7 @@ export default function DailyReportsPage() {
         achievement_percentage: pct,
         weighted_score: Math.min(100, pct) * (kpi.weight / 100),
         input_type: 'automatic',
+        brand_id,
       })
     }
   }, [userId, kpisQ.data, upsertKpi])
@@ -174,6 +175,8 @@ export default function DailyReportsPage() {
   async function handleSubmit() {
     if (!plan && !done) return
     if (!userId) return
+    const bId = requireBrandId()
+    if (!bId) { setUploadErr('Pilih brand dulu (bukan "Semua Brand") untuk kirim laporan.'); return }
     setUploadErr('')
 
     // Upload proof dulu jika ada
@@ -203,12 +206,13 @@ export default function DailyReportsPage() {
       blockers: blocker || undefined,
       proof_url: proofUrl,
       kpi_entries: validEntries.length > 0 ? validEntries : undefined,
+      brand_id: bId,
     })
 
     // Sync KPI jika ada entry
     if (validEntries.length > 0) {
       setSyncing(true)
-      try { await syncKpi(validEntries.map(e => e.kpi_id)) } finally { setSyncing(false) }
+      try { await syncKpi(validEntries.map(e => e.kpi_id), bId) } finally { setSyncing(false) }
     }
 
     // Reset form — tiap submit adalah entri baru, siap untuk laporan berikutnya
@@ -233,6 +237,11 @@ export default function DailyReportsPage() {
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-[18px]">
           <div className="text-[13px] font-bold text-[#2B2A24] mb-[3px]">Buat Laporan · {formatDate(today, 'd MMM yyyy')}</div>
           <div className="text-[12px] text-[#A89F86] mb-4">Bisa isi beberapa kali sehari — tiap kirim jadi entri baru yang menumpuk.</div>
+          {isAllBrands && (
+            <div className="mb-4 text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+              Mode "Semua Brand" — pilih brand tertentu untuk kirim laporan.
+            </div>
+          )}
 
           <label className="text-[12px] font-semibold text-[#5A574C]">Rencana hari ini</label>
           <textarea className={taClass} placeholder="Apa yang akan dikerjakan hari ini?" value={plan}
@@ -336,7 +345,7 @@ export default function DailyReportsPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button onClick={handleSubmit} disabled={upsert.isPending || syncing || uploading}
+            <button onClick={handleSubmit} disabled={upsert.isPending || syncing || uploading || isAllBrands}
               className="bg-[#5E7A5C] text-white border-none rounded-md px-5 py-[9px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors disabled:opacity-60">
               {uploading ? 'Upload bukti...' : syncing ? 'Sync KPI...' : upsert.isPending ? 'Menyimpan...' : '+ Tambah Laporan'}
             </button>

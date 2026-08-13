@@ -34,15 +34,15 @@ const textareaCls = 'border border-[#E3DCC8] rounded-md px-3 py-[10px] text-[13p
 const inputCls = 'border border-[#E3DCC8] rounded-md px-3 py-[9px] text-[13px] bg-[#FCFAF2] text-[#2B2A24] focus:outline-none focus:border-[#7E997B] transition-colors w-full'
 
 export default function WeeklyReviewPage() {
-  const { isLeader, userId } = useApp()
+  const { isLeader, userId, brandId, isAllBrands, requireBrandId } = useApp()
   const [weekOffset, setWeekOffset] = useState(0)
   const week = getWeekRange(weekOffset)
 
-  const reviewsQ  = useWeeklyReviews()
-  const salesQ    = useSalesRecords(week.start, week.end)
-  const tasksQ    = useTasks()
-  const kpiQ      = useAllKpiResults(week.start, week.end)
-  const insightQ  = useAccountInsights(week.start, week.end)
+  const reviewsQ  = useWeeklyReviews(brandId)
+  const salesQ    = useSalesRecords(week.start, week.end, brandId)
+  const tasksQ    = useTasks(undefined, brandId)
+  const kpiQ      = useAllKpiResults(week.start, week.end, brandId)
+  const insightQ  = useAccountInsights(week.start, week.end, brandId)
   const upsert    = useUpsertWeeklyReview()
 
   const existing = (reviewsQ.data ?? []).find(
@@ -85,6 +85,8 @@ export default function WeeklyReviewPage() {
   const latestInsight = insights[0] ?? null
 
   async function handleSave() {
+    const bId = requireBrandId()
+    if (!bId) return
     await upsert.mutateAsync({
       ...(existing?.id ? { id: existing.id } : {}),
       period_start: week.start,
@@ -93,6 +95,7 @@ export default function WeeklyReviewPage() {
       leader_notes: form.leader_notes || undefined,
       decision: form.decision || undefined,
       created_by: userId ?? undefined,
+      brand_id: bId,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
@@ -102,6 +105,11 @@ export default function WeeklyReviewPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {isAllBrands && isLeader && (
+        <div className="text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+          Mode "Semua Brand" — pilih brand tertentu untuk membuat/simpan weekly review.
+        </div>
+      )}
       {/* Week navigator */}
       <div className="flex items-center gap-3">
         <button onClick={() => setWeekOffset(o => o - 1)}

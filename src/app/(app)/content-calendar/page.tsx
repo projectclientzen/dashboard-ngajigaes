@@ -64,10 +64,10 @@ const MONTHS_ID = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','
 const DAYS_ID   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab']
 
 export default function ContentCalendarPage() {
-  const { userId, isLeader } = useApp()
+  const { userId, isLeader, brandId, isAllBrands, requireBrandId } = useApp()
   // Tanpa filter range — kalender konten harus menampilkan konten masa depan
   // dan konten tanpa tanggal publish (range filter menyembunyikan keduanya)
-  const contentsQ = useContents()
+  const contentsQ = useContents(undefined, undefined, brandId)
   const usersQ = useAllUsers()
   const createContent = useCreateContent()
   const updateContent = useUpdateContent()
@@ -153,7 +153,9 @@ export default function ContentCalendarPage() {
       if (selected) {
         await updateContent.mutateAsync({ id: selected.id, ...payload })
       } else {
-        await createContent.mutateAsync(payload)
+        const bId = requireBrandId()
+        if (!bId) { setErr('Pilih brand dulu (bukan "Semua Brand") untuk membuat konten.'); return }
+        await createContent.mutateAsync({ ...payload, brand_id: bId })
       }
       setShowDrawer(false)
     } catch (e) {
@@ -196,11 +198,17 @@ export default function ContentCalendarPage() {
             )
           })}
         </div>
-        <button onClick={openNew}
-          className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors">
+        <button onClick={openNew} disabled={isAllBrands}
+          title={isAllBrands ? 'Pilih brand dulu untuk membuat konten' : undefined}
+          className="inline-flex items-center gap-[6px] bg-[#5E7A5C] text-white border-none rounded-md px-[15px] py-[8px] text-[13px] font-semibold cursor-pointer hover:bg-[#4F6A4D] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
           + Buat Konten
         </button>
       </div>
+      {isAllBrands && (
+        <div className="text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+          Mode "Semua Brand" — pilih brand tertentu untuk membuat konten baru.
+        </div>
+      )}
 
       {/* ── Calendar View ──────────────────────────────── */}
       {view === 'calendar' && (
@@ -407,9 +415,11 @@ export default function ContentCalendarPage() {
                   {selected.repliz_schedule_id ? (
                     <div className="text-[12px] text-[#5E8C61] bg-[#E9F3EA] rounded-md px-3 py-2">
                       ✓ Sudah terjadwal · status: <b>{selected.repliz_status ?? 'scheduled'}</b>
-                      {(selected.likes ?? selected.comments ?? selected.shares) != null && (
+                      {(selected.likes ?? selected.comments ?? selected.shares ?? selected.reach ?? selected.views) != null && (
                         <span className="block mt-1 text-[#4F7CAC]">
                           ❤️ {selected.likes ?? 0} · 💬 {selected.comments ?? 0} · 🔁 {selected.shares ?? 0}
+                          {selected.views != null && <> · 👁 {selected.views}</>}
+                          {selected.reach != null && <> · 📈 {selected.reach}</>}
                         </span>
                       )}
                     </div>

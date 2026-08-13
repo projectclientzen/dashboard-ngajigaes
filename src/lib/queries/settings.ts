@@ -90,12 +90,13 @@ export interface ProductInput {
   type: ProductType
   price: number
   status: 'active' | 'inactive'
+  brand_id?: string   // wajib saat create, tidak dipakai saat update
 }
 
 export function useCreateProduct() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: Omit<ProductInput, 'id'>) => {
+    mutationFn: async (payload: Omit<ProductInput, 'id'> & { brand_id: string }) => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from('products').insert(payload)

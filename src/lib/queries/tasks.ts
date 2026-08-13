@@ -6,9 +6,10 @@ type RawRow = Record<string, unknown>
 
 // userId: jika diisi → tampil task yg di-assign KE user ATAU dibuat OLEH user
 // undefined → tampil semua (untuk leader)
-export function useTasks(userId?: string) {
+// brandId: 'all' → lintas brand (agregat), string → filter brand tsb
+export function useTasks(userId?: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['tasks', userId],
+    queryKey: ['tasks', userId, brandId],
     queryFn: async (): Promise<Task[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -20,6 +21,7 @@ export function useTasks(userId?: string) {
 
       // Member: lihat task yg di-assign ke mereka ATAU yang mereka buat
       if (userId) q = q.or(`assignee_id.eq.${userId},created_by.eq.${userId}`)
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
 
       const { data, error } = await q as { data: RawRow[] | null; error: unknown }
       if (error) throw error
@@ -39,6 +41,7 @@ export function useTasks(userId?: string) {
         is_overdue: (t.is_overdue as boolean) ?? false,
         result_link: t.result_link as string | null,
         revision_notes: t.revision_notes as string | null,
+        brand_id: t.brand_id as string,
         created_at: t.created_at as string,
         updated_at: t.updated_at as string,
       })) as Task[]
@@ -93,7 +96,7 @@ export function useCreateTask() {
     mutationFn: async (task: {
       title: string; description?: string; category: string
       assignee_id: string; created_by: string; priority: string
-      deadline?: string
+      deadline?: string; brand_id: string
     }) => {
       const { error } = await db().from('tasks').insert(task)
       if (error) throw error

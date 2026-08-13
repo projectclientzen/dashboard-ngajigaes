@@ -1,5 +1,6 @@
 import type { DailyReport, WeeklyReview, ActionPlan } from '@/types'
 
+const BRAND = 'brand-ngajigaes'
 const today = '2026-06-26'
 const yesterday = '2026-06-25'
 
@@ -19,6 +20,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     proof_url: null,
     kpi_entries: [],
     created_at: '2026-06-26T08:00:00Z',
+    brand_id: BRAND,
   },
   {
     id: 'report-02',
@@ -35,6 +37,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     proof_url: null,
     kpi_entries: [],
     created_at: '2026-06-26T08:00:00Z',
+    brand_id: BRAND,
   },
   {
     id: 'report-03',
@@ -51,6 +54,7 @@ export const MOCK_DAILY_REPORTS: DailyReport[] = [
     proof_url: null,
     kpi_entries: [],
     created_at: '2026-06-26T08:00:00Z',
+    brand_id: BRAND,
   },
 ]
 
@@ -87,6 +91,7 @@ export const MOCK_WEEKLY_REVIEWS: WeeklyReview[] = [
     main_problem: 'Satu reels terlambat karena masalah copyright musik. Perlu SOP musik yang lebih jelas.',
     leader_notes: 'Performa konten carousel Rina sangat bagus minggu ini. Bagas perlu lebih cepat dalam editing.',
     decision: 'Buat library musik bebas copyright internal. Rina buat 2 carousel/minggu sebagai standar.',
+    brand_id: BRAND,
   },
 ]
 
@@ -102,6 +107,7 @@ export const MOCK_ACTION_PLANS: ActionPlan[] = [
     priority: 'high',
     status: 'todo',
     converted_task_id: null,
+    brand_id: BRAND,
   },
   {
     id: 'ap-02',
@@ -114,6 +120,7 @@ export const MOCK_ACTION_PLANS: ActionPlan[] = [
     priority: 'medium',
     status: 'in_progress',
     converted_task_id: null,
+    brand_id: BRAND,
   },
   {
     id: 'ap-03',
@@ -126,5 +133,6 @@ export const MOCK_ACTION_PLANS: ActionPlan[] = [
     priority: 'medium',
     status: 'todo',
     converted_task_id: 'task-05',  // sudah diconvert
+    brand_id: BRAND,
   },
 ]

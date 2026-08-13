@@ -1,11 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import { useUser } from '@/lib/hooks/useUser'
+import { useBrands } from '@/lib/queries/brands'
 import { todayJakarta } from '@/lib/utils'
-import type { Role } from '@/types'
+import type { Role, Brand } from '@/types'
 
 export type DateRange = 'today' | '7d' | '30d' | '90d' | 'custom'
+
+const BRAND_STORAGE_KEY = 'ngajigaes-active-brand'
 
 interface AppContextValue {
   // Auth
@@ -16,6 +19,14 @@ interface AppContextValue {
   isLeader: boolean
   isMember: boolean
   isLoading: boolean
+  // Brand (CTX-1)
+  brandId: string | 'all'
+  setBrandId: (id: string | 'all') => void
+  brand: Brand | null           // null saat mode 'all'
+  isAllBrands: boolean
+  brands: Brand[]
+  brandsLoading: boolean
+  requireBrandId: () => string | null   // CTX-2: guard untuk create action
   // Date range global
   dateRange: DateRange
   setDateRange: (r: DateRange) => void
@@ -65,6 +76,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isLeader = userRole === 'leader'
   const isMember = !isLeader
 
+  // ── Brand state (CTX-1) ────────────────────────────────────
+  const brandsQ = useBrands()
+  const brands = brandsQ.data ?? []
+
+  const [brandId, setBrandIdState] = useState<string | 'all'>('all')
+
+  // Load dari localStorage sekali di client
+  useEffect(() => {
+    const saved = localStorage.getItem(BRAND_STORAGE_KEY)
+    if (saved) setBrandIdState(saved)
+  }, [])
+
+  function setBrandId(id: string | 'all') {
+    setBrandIdState(id)
+    localStorage.setItem(BRAND_STORAGE_KEY, id)
+  }
+
+  // Jika brand tersimpan sudah tidak aktif/ada, fallback ke 'all'
+  useEffect(() => {
+    if (brandId === 'all' || brands.length === 0) return
+    if (!brands.some(b => b.id === brandId)) setBrandId('all')
+  }, [brandId, brands])
+
+  const brand = brandId === 'all' ? null : (brands.find(b => b.id === brandId) ?? null)
+  const isAllBrands = brandId === 'all'
+
+  // CTX-2: guard untuk aksi create — kembalikan null saat mode 'all'
+  function requireBrandId(): string | null {
+    return isAllBrands ? null : brandId
+  }
+
   return (
     <AppContext.Provider value={{
       userId: user?.id ?? null,
@@ -74,6 +116,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       isLeader,
       isMember,
       isLoading,
+      brandId,
+      setBrandId,
+      brand,
+      isAllBrands,
+      brands,
+      brandsLoading: brandsQ.isLoading,
+      requireBrandId,
       dateRange,
       setDateRange,
       customStart,

@@ -4,37 +4,39 @@ import type { Kpi, KpiResult } from '@/types'
 
 type RawRow = Record<string, unknown>
 
-export function useKpis() {
+export function useKpis(brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['kpis'],
+    queryKey: ['kpis', brandId],
     queryFn: async (): Promise<Kpi[]> => {
       const supabase = createClient()
-      const { data, error } = await supabase
-        .from('kpis')
-        .select('*')
-        .eq('is_active', true)
-        .order('name')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any
+      let q = sb.from('kpis').select('*').eq('is_active', true).order('name')
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q
       if (error) throw error
       return (data ?? []) as Kpi[]
     },
   })
 }
 
-export function useKpiResults(userId: string, periodStart: string, periodEnd: string) {
+export function useKpiResults(userId: string, periodStart: string, periodEnd: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['kpi-results', userId, periodStart, periodEnd],
+    queryKey: ['kpi-results', userId, periodStart, periodEnd, brandId],
     queryFn: async (): Promise<KpiResult[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
       // Overlap: periode result bersinggungan dengan range yang dipilih
-      const { data, error } = await sb
+      let q = sb
         .from('kpi_results')
         .select('*, kpi:kpis(name)')
         .eq('user_id', userId)
         .lte('period_start', periodEnd)
         .gte('period_end', periodStart)
-        .order('created_at', { ascending: false }) as { data: RawRow[] | null; error: unknown }
+        .order('created_at', { ascending: false })
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q as { data: RawRow[] | null; error: unknown }
 
       if (error) throw error
       return (data ?? []).map((r) => ({
@@ -47,26 +49,29 @@ export function useKpiResults(userId: string, periodStart: string, periodEnd: st
         actual_value: r.actual_value as number,
         achievement_percentage: r.achievement_percentage as number,
         weighted_score: r.weighted_score as number,
+        brand_id: r.brand_id as string,
       })) as KpiResult[]
     },
     enabled: !!userId,
   })
 }
 
-export function useAllKpiResults(periodStart: string, periodEnd: string) {
+export function useAllKpiResults(periodStart: string, periodEnd: string, brandId?: string | 'all') {
   return useQuery({
-    queryKey: ['all-kpi-results', periodStart, periodEnd],
+    queryKey: ['all-kpi-results', periodStart, periodEnd, brandId],
     queryFn: async (): Promise<KpiResult[]> => {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
       // Overlap: periode result bersinggungan dengan range yang dipilih
-      const { data, error } = await sb
+      let q = sb
         .from('kpi_results')
         .select('*, kpi:kpis(name)')
         .lte('period_start', periodEnd)
         .gte('period_end', periodStart)
-        .order('user_id') as { data: RawRow[] | null; error: unknown }
+        .order('user_id')
+      if (brandId && brandId !== 'all') q = q.eq('brand_id', brandId)
+      const { data, error } = await q as { data: RawRow[] | null; error: unknown }
 
       if (error) throw error
       return (data ?? []).map((r) => ({
@@ -79,18 +84,19 @@ export function useAllKpiResults(periodStart: string, periodEnd: string) {
         actual_value: r.actual_value as number,
         achievement_percentage: r.achievement_percentage as number,
         weighted_score: r.weighted_score as number,
+        brand_id: r.brand_id as string,
       })) as KpiResult[]
     },
   })
 }
 
-export function useKpiActual(kpiId: string, userId: string, start: string, end: string) {
+export function useKpiActual(kpiId: string, userId: string, start: string, end: string, brandId?: string | null) {
   return useQuery({
-    queryKey: ['kpi-actual', kpiId, userId, start, end],
+    queryKey: ['kpi-actual', kpiId, userId, start, end, brandId],
     queryFn: async (): Promise<number> => {
       const supabase = createClient()
       const { data, error } = await db().rpc('compute_kpi_actual', {
-        p_kpi_id: kpiId, p_user_id: userId, p_start: start, p_end: end,
+        p_kpi_id: kpiId, p_user_id: userId, p_start: start, p_end: end, p_brand_id: brandId ?? null,
       })
       if (error) throw error
       return (data as number) ?? 0
@@ -107,7 +113,7 @@ export function useCreateKpi() {
       name: string; description?: string; category: string
       target_value: number; unit: string; weight: number
       period: string; calculation_method: string
-      role_id?: string; user_id?: string
+      role_id?: string; user_id?: string; brand_id: string
     }) => {
       const { error } = await db().from('kpis').insert({ ...kpi, is_active: true, max_score_cap: 100 })
       if (error) throw error
@@ -149,6 +155,7 @@ export function useUpsertKpiResult() {
       kpi_id: string; user_id: string; period_start: string; period_end: string
       target_value: number; actual_value: number; achievement_percentage: number
       weighted_score: number; input_type: 'manual' | 'automatic'; notes?: string
+      brand_id: string
     }) => {
       const { error } = await db()
         .from('kpi_results')
@@ -162,9 +169,9 @@ export function useUpsertKpiResult() {
   })
 }
 
-/** Ambil semua daily_reports user dalam range untuk recompute KPI */
+/** Ambil semua daily_reports user dalam range (per brand) untuk recompute KPI */
 export async function fetchDailyKpiEntries(
-  userId: string, start: string, end: string
+  userId: string, start: string, end: string, brandId: string
 ): Promise<{ kpi_id: string; qty: number }[]> {
   const { createClient } = await import('@/lib/supabase/client')
   const supabase = createClient()
@@ -173,6 +180,7 @@ export async function fetchDailyKpiEntries(
     .from('daily_reports')
     .select('kpi_entries')
     .eq('user_id', userId)
+    .eq('brand_id', brandId)
     .gte('report_date', start)
     .lte('report_date', end)
   if (error) throw error

@@ -35,24 +35,24 @@ Track: **FND** foundation, **CTX** context+switcher, **MOD** module wiring, **AG
 
 ## Sprint 0 — Foundation (FND)
 
-- [ ] **FND-1 Migrasi tabel `brands`** Kolom: `id uuid pk default gen_random_uuid()`, `name text not null`, `slug text unique not null`, `color text`, `logo_url text`, `status text default 'active' check (active|inactive)`, `created_at timestamptz default now()`. Cek: insert jalan.
-- [ ] **FND-2 Seed brands** Insert 3 brand existing: `ngajigaes`, `labbaika`, `alaika` (slug = nama lowercase). Simpan id `ngajigaes` untuk backfill. Cek: 3 baris ada.
-- [ ] **FND-3 RLS brands** SELECT untuk semua authenticated. INSERT/UPDATE/DELETE leader-only. Cek: tim bisa baca, tim ditolak tulis.
-- [ ] **FND-4 Tambah `brand_id` ke 13 tabel workspace** `alter table <t> add column brand_id uuid references brands(id)`. Cek: kolom ada, FK valid.
-- [ ] **FND-5 Backfill workspace → ngajigaes** `update <t> set brand_id = '<id-ngajigaes>' where brand_id is null` untuk 13 tabel. Cek: tidak ada baris `brand_id is null`.
-- [ ] **FND-6 Set NOT NULL + index** Setelah backfill: `alter column brand_id set not null` + `create index <t>_brand_idx on <t>(brand_id)` untuk 13 tabel. Cek: query per brand pakai index.
-- [ ] **FND-7 Query `brands`** `lib/queries/brands.ts`: `useBrands()` (list active), `useCreateBrand`, `useUpdateBrand`, `useDeleteBrand` (soft: status=inactive). Cek: list tampil.
-- [ ] **FND-8 Tipe `Brand`** Tambah di `types/index.ts`: `{ id, name, slug, color, logo_url, status }`. Cek: tipe cocok row.
+- [x] **FND-1 Migrasi tabel `brands`** Kolom: `id uuid pk default gen_random_uuid()`, `name text not null`, `slug text unique not null`, `color text`, `logo_url text`, `status text default 'active' check (active|inactive)`, `created_at timestamptz default now()`. Cek: insert jalan. *(verified live di Supabase — migration `multibrand_fnd_create_brands`)*
+- [x] **FND-2 Seed brands** Insert 3 brand existing: `ngajigaes`, `labbaika`, `alaika` (slug = nama lowercase). Simpan id `ngajigaes` untuk backfill. Cek: 3 baris ada. *(verified: 3 rows di tabel `brands`)*
+- [x] **FND-3 RLS brands** SELECT untuk semua authenticated. INSERT/UPDATE/DELETE leader-only. Cek: tim bisa baca, tim ditolak tulis. *(verified: policy `brands_select_all` + `brands_leader_write`)*
+- [x] **FND-4 Tambah `brand_id` ke 13 tabel workspace** `alter table <t> add column brand_id uuid references brands(id)`. Cek: kolom ada, FK valid. *(verified: semua 13 tabel punya kolom `brand_id`)*
+- [x] **FND-5 Backfill workspace → ngajigaes** `update <t> set brand_id = '<id-ngajigaes>' where brand_id is null` untuk 13 tabel. Cek: tidak ada baris `brand_id is null`. *(verified: 0 NULL di semua 13 tabel)*
+- [x] **FND-6 Set NOT NULL + index** Setelah backfill: `alter column brand_id set not null` + `create index <t>_brand_idx on <t>(brand_id)` untuk 13 tabel. Cek: query per brand pakai index.
+- [x] **FND-7 Query `brands`** `lib/queries/brands.ts`: `useBrands()` (list active), `useCreateBrand`, `useUpdateBrand`, `useDeleteBrand` (soft: status=inactive). Cek: list tampil. *(implemented — `useDeleteBrand` belum ada, pakai `useUpdateBrand({status:'inactive'})`)*
+- [x] **FND-8 Tipe `Brand`** Tambah di `types/index.ts`: `{ id, name, slug, color, logo_url, status }`. Cek: tipe cocok row.
 
 ---
 
 ## Sprint 1 — Context + Switcher (CTX)
 
-- [ ] **CTX-1 AppContext brand state** Tambah ke `AppContext`: `brandId: string | 'all'`, `setBrandId`, `brand` (objek terpilih atau null saat 'all'), `isAllBrands`. Persist ke localStorage. Default `'all'`. Cek: state bertahan reload.
-- [ ] **CTX-2 Guard brand konkret** Helper `requireBrandId()` → lempar/return null saat `'all'`. Dipakai halaman create. Cek: create diblok saat "Semua Brand".
-- [ ] **CTX-3 BrandSwitcher komponen** Dropdown di Header (desktop) + Header mobile. Isi: "Semua Brand" + tiap brand (warna + nama). Ganti brand → update context. Cek: pilih brand → context berubah.
-- [ ] **CTX-4 Badge brand di sidebar** Tampilkan brand aktif di bawah logo (nama + warna) biar konteks jelas. Cek: brand aktif kelihatan.
-- [ ] **CTX-5 Reset query saat ganti brand** Pastikan react-query key semua modul menyertakan `brandId` → auto refetch saat switch. Cek: ganti brand → data ikut ganti.
+- [x] **CTX-1 AppContext brand state** Tambah ke `AppContext`: `brandId: string | 'all'`, `setBrandId`, `brand` (objek terpilih atau null saat 'all'), `isAllBrands`. Persist ke localStorage. Default `'all'`. Cek: state bertahan reload.
+- [x] **CTX-2 Guard brand konkret** Helper `requireBrandId()` → lempar/return null saat `'all'`. Dipakai halaman create. Cek: create diblok saat "Semua Brand".
+- [x] **CTX-3 BrandSwitcher komponen** Dropdown di Header (desktop) + Header mobile. Isi: "Semua Brand" + tiap brand (warna + nama). Ganti brand → update context. Cek: pilih brand → context berubah.
+- [x] **CTX-4 Badge brand di sidebar** Tampilkan brand aktif di bawah logo (nama + warna) biar konteks jelas. Cek: brand aktif kelihatan.
+- [ ] **CTX-5 Reset query saat ganti brand** Pastikan react-query key semua modul menyertakan `brandId` → auto refetch saat switch. Cek: ganti brand → data ikut ganti. *(in progress — `contents.ts`, `tasks.ts`, `daily-reports.ts` sudah; sisanya lihat MOD)*
 
 ---
 

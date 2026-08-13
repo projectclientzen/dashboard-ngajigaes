@@ -219,7 +219,8 @@ function UsersTab() {
 
 // ─── PRODUCTS TAB ─────────────────────────────────────────────
 function ProductsTab() {
-  const productsQ = useProducts()
+  const { brandId, isAllBrands, requireBrandId } = useApp()
+  const productsQ = useProducts(brandId)
   const createProduct = useCreateProduct()
   const updateProduct = useUpdateProduct()
 
@@ -253,7 +254,9 @@ function ProductsTab() {
       if (editing) {
         await updateProduct.mutateAsync({ id: editing, name: form.name, type: form.type, price, status: form.status })
       } else {
-        await createProduct.mutateAsync({ name: form.name, type: form.type, price, status: form.status })
+        const bId = requireBrandId()
+        if (!bId) { setErr('Pilih brand dulu (bukan "Semua Brand") untuk tambah produk.'); return }
+        await createProduct.mutateAsync({ name: form.name, type: form.type, price, status: form.status, brand_id: bId })
       }
       setShowModal(false)
     } catch (e) {
@@ -265,8 +268,13 @@ function ProductsTab() {
     <div>
       <SectionHeader
         title={`Produk (${products.length})`}
-        action={<Btn onClick={openNew}>+ Tambah Produk</Btn>}
+        action={<Btn onClick={openNew} disabled={isAllBrands}>+ Tambah Produk</Btn>}
       />
+      {isAllBrands && (
+        <div className="mb-3 text-[12px] text-[#C77B3C] bg-[#F8EEE2] border border-[#EFE0C9] rounded-md px-3 py-[8px]">
+          Mode "Semua Brand" — pilih brand tertentu untuk kelola produk.
+        </div>
+      )}
       <div className="bg-white border border-[#EBE5D4] rounded-lg overflow-hidden">
         {productsQ.isLoading ? (
           <div className="p-6 text-[13px] text-[#9A9279]">Memuat...</div>

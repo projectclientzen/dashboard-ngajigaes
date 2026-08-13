@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
         (s.permalink as string) ?? (s.postUrl as string) ?? (s.link as string) ?? null
       const contentId =
         (s.contentId as string) ?? (s.content_id as string) ?? null
+      const accountId =
+        (s.accountId as string) ?? (s.account_id as string) ?? null
 
       const update: Record<string, unknown> = {}
       if (status) {
@@ -48,14 +50,20 @@ export async function POST(req: NextRequest) {
       }
       if (postLink) update.post_link = postLink
 
-      // Engagement jika sudah published & ada content id di Repliz
-      if (contentId) {
+      // Engagement jika sudah published & ada content id + account id di Repliz
+      if (contentId && accountId) {
         try {
-          const stat = await getContentStatistic({ contentId })
+          const stat = await getContentStatistic(contentId, accountId)
           const d = (stat.data ?? stat) as Record<string, unknown>
-          if (typeof d.likes === 'number')    update.likes = d.likes
-          if (typeof d.comments === 'number') update.comments = d.comments
-          if (typeof d.shares === 'number')   update.shares = d.shares
+          // Metric tersedia beda-beda per platform (TikTok ga punya saved/interaction,
+          // Threads ga punya saved, dll) — guard typeof number per field.
+          if (typeof d.like === 'number')        update.likes = d.like
+          if (typeof d.comment === 'number')     update.comments = d.comment
+          if (typeof d.share === 'number')       update.shares = d.share
+          if (typeof d.reach === 'number')       update.reach = d.reach
+          if (typeof d.saved === 'number')       update.saved = d.saved
+          if (typeof d.views === 'number')       update.views = d.views
+          if (typeof d.interaction === 'number') update.interaction = d.interaction
           update.engagement_synced_at = new Date().toISOString()
         } catch { /* statistik belum tersedia — skip */ }
       }
