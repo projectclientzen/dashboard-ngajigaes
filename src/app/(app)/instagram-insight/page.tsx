@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useApp } from '@/contexts/AppContext'
 import { useAccountInsights, useUpsertAccountInsight, useContentInsights } from '@/lib/queries/instagram'
 import { formatDate, formatDateTime, formatNumber } from '@/lib/utils'
@@ -61,19 +62,52 @@ function MetricCard({ label, value, sub, color, source, action }: {
   )
 }
 
-function Sparkline({ values, stroke = '#5E7A5C' }: { values: number[]; stroke?: string }) {
-  if (values.length < 2) return <div className="h-[60px] flex items-center justify-center text-[11px] text-[#A89F86]">Belum cukup data</div>
-  const mn = Math.min(...values), mx = Math.max(...values)
-  const pts = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * 100
-    const y = 90 - ((v - mn) / ((mx - mn) || 1)) * 80
-    return `${x.toFixed(1)},${y.toFixed(1)}`
-  })
+function compactNumber(v: number) {
+  return new Intl.NumberFormat('id-ID', { notation: 'compact', maximumFractionDigits: 1 }).format(v)
+}
+
+interface ChartPoint { date: string; value: number }
+
+function ChartTooltip({ active, payload, label, valueFormatter }: {
+  active?: boolean; label?: string
+  payload?: { value: number }[]
+  valueFormatter: (v: number) => string
+}) {
+  if (!active || !payload?.length) return null
   return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-[60px]">
-      <polyline points={pts.join(' ')} fill="none" stroke={stroke} strokeWidth="1.5"
-        strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke"/>
-    </svg>
+    <div className="bg-white border border-[#E3DCC8] rounded-md px-[10px] py-[6px] shadow-md">
+      <div className="text-[10px] text-[#9A9279] mb-[2px]">{label}</div>
+      <div className="text-[13px] font-bold text-[#2B2A24] tabular-nums">{valueFormatter(payload[0].value)}</div>
+    </div>
+  )
+}
+
+// Mini line chart dengan sumbu Y (nilai asli, bukan garis polos) + tooltip hover.
+function MiniLineChart({ data, stroke = '#5E7A5C', axisFormatter, tooltipFormatter }: {
+  data: ChartPoint[]; stroke?: string
+  axisFormatter: (v: number) => string
+  tooltipFormatter: (v: number) => string
+}) {
+  if (data.length < 2) return <div className="h-[150px] flex items-center justify-center text-[11px] text-[#A89F86]">Belum cukup data</div>
+  const values = data.map(d => d.value)
+  const min = Math.min(...values), max = Math.max(...values)
+  const pad = (max - min) * 0.15 || Math.max(max * 0.1, 1)
+
+  return (
+    <div className="h-[150px] -ml-[6px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 6, right: 10, bottom: 0, left: 0 }}>
+          <CartesianGrid vertical={false} stroke="#F1ECDC" />
+          <XAxis dataKey="date" tick={{ fontSize: 9.5, fill: '#B0A78C' }} axisLine={false} tickLine={false}
+            interval="preserveStartEnd" tickMargin={6} />
+          <YAxis width={38} tick={{ fontSize: 9.5, fill: '#B0A78C' }} axisLine={false} tickLine={false}
+            domain={[Math.max(0, min - pad), max + pad]} tickCount={4} tickFormatter={axisFormatter} />
+          <Tooltip content={<ChartTooltip valueFormatter={tooltipFormatter} />} cursor={{ stroke: '#E3DCC8', strokeWidth: 1 }} />
+          <Line type="monotone" dataKey="value" stroke={stroke} strokeWidth={2}
+            dot={{ r: 2.5, fill: stroke, strokeWidth: 0 }} activeDot={{ r: 4 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -418,32 +452,32 @@ export default function InstagramInsightPage() {
       </div>
 
       {/* Reach / Engagement per hari */}
-      {insights.length > 1 && (
-        <div className="grid md:grid-cols-2 gap-3">
-          <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[13px] font-bold text-[#2B2A24]">Reach per hari</span>
-              <span className="text-[11px] text-[#9A9279]">akun unik terjangkau</span>
+      {insights.length > 1 && (() => {
+        const reachData: ChartPoint[] = insights.map(i => ({ date: formatDate(i.insight_date, 'd MMM'), value: i.reach ?? 0 }))
+        const erData: ChartPoint[] = insights.map(i => ({ date: formatDate(i.insight_date, 'd MMM'), value: i.engagement_rate ?? 0 }))
+        const lastReach = reachData[reachData.length - 1]
+        const lastEr = erData[erData.length - 1]
+        return (
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[13px] font-bold text-[#2B2A24]">Reach per hari</span>
+                <span className="text-[16px] font-bold text-[#2B2A24] tabular-nums">{formatNumber(lastReach.value)}</span>
+              </div>
+              <div className="text-[11px] text-[#9A9279] mb-1">akun unik terjangkau · {lastReach.date}</div>
+              <MiniLineChart data={reachData} stroke="#5E7A5C" axisFormatter={compactNumber} tooltipFormatter={formatNumber} />
             </div>
-            <Sparkline values={insights.map(i => i.reach ?? 0)}/>
-            <div className="flex justify-between text-[10px] text-[#B0A78C] mt-1">
-              <span>{formatDate(insights[0].insight_date, 'd MMM')}</span>
-              <span>{formatDate(insights[insights.length - 1].insight_date, 'd MMM')}</span>
+            <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[13px] font-bold text-[#2B2A24]">Engagement per hari</span>
+                <span className="text-[16px] font-bold tabular-nums" style={{ color: erColor(lastEr.value / 100) }}>{lastEr.value.toFixed(2)}%</span>
+              </div>
+              <div className="text-[11px] text-[#9A9279] mb-1">engagement rate · {lastEr.date}</div>
+              <MiniLineChart data={erData} stroke="#4F7CAC" axisFormatter={v => `${v.toFixed(1)}%`} tooltipFormatter={v => `${v.toFixed(2)}%`} />
             </div>
           </div>
-          <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[13px] font-bold text-[#2B2A24]">Engagement per hari</span>
-              <span className="text-[11px] text-[#9A9279]">engagement rate (%)</span>
-            </div>
-            <Sparkline values={insights.map(i => i.engagement_rate ?? 0)} stroke="#4F7CAC"/>
-            <div className="flex justify-between text-[10px] text-[#B0A78C] mt-1">
-              <span>{formatDate(insights[0].insight_date, 'd MMM')}</span>
-              <span>{formatDate(insights[insights.length - 1].insight_date, 'd MMM')}</span>
-            </div>
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Top Konten */}
       <TopKontenCard brandId={brandId} contentFormatFilter={contentFormatFilter} />
