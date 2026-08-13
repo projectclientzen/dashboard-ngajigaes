@@ -18,6 +18,7 @@ const PAGE_TITLES: Record<string, [string, string]> = {
   '/my-performance':      ['Performa Saya',         'Skor & posisi di tim'],
   '/content-calendar':    ['Content Calendar',      'Rencana & jadwal konten'],
   '/instagram-insight':   ['Instagram Insight',     'Performa akun & konten'],
+  '/inbox':               ['Inbox',                 'Komentar & chat dari semua platform'],
   '/sales':               ['Omzet & Produk',        'Penjualan & produk'],
   '/weekly-review':       ['Weekly Review',         'Evaluasi mingguan'],
   '/settings':            ['Settings',              'Pengaturan tim & sistem'],

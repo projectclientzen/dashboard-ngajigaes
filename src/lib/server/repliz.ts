@@ -116,3 +116,47 @@ export async function getContents(page = 1, limit = 50) {
     `/content?page=${page}&limit=${limit}`
   )
 }
+
+// ── Paginated list shape dipakai comment/chat/message ────────
+export interface ReplizPage<T> {
+  docs: T[]
+  totalDocs: number
+  limit: number
+  totalPages: number
+  page: number
+  hasPrevPage: boolean
+  hasNextPage: boolean
+}
+
+export type CommentStatus = 'pending' | 'resolved' | 'ignored'
+export type ChatStatus = 'unread' | 'unreplied'
+
+/** List komentar dari semua akun tersambung (Standard+) */
+export async function getComments(page = 1, status?: CommentStatus, limit = 20) {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (status) qs.set('status', status)
+  return replizFetch<ReplizPage<Record<string, unknown>>>(`/comment?${qs.toString()}`)
+}
+
+/** Balas komentar — diteruskan langsung ke platform asal (Standard+) */
+export async function replyComment(commentId: string, text: string) {
+  return replizFetch<{ commentId: string }>(`/comment/${commentId}`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  })
+}
+
+/** List percakapan chat/DM (Gold+) */
+export async function getChats(page = 1, status?: ChatStatus, limit = 20) {
+  const qs = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (status) qs.set('status', status)
+  return replizFetch<ReplizPage<Record<string, unknown>>>(`/chat?${qs.toString()}`)
+}
+
+/** Kirim pesan text baru ke sebuah chat (Gold+) */
+export async function sendChatMessage(chatId: string, text: string) {
+  return replizFetch<{ messageId: string }>(`/chat/${chatId}/message`, {
+    method: 'POST',
+    body: JSON.stringify({ type: 'text', text }),
+  })
+}
