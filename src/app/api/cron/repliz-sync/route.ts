@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runReplizSync } from '@/lib/server/replizSync'
+import { runReplizSync, runReplizAccountInsightSync } from '@/lib/server/replizSync'
 
 // GET — dipanggil scheduler (Vercel Cron / VPS crontab / dll).
+// Jalankan sync content (engagement per-post) + sync account insight IG
+// (snapshot harian) sekaligus.
 // Auth: Bearer PUSH_SEND_SECRET (sama dengan POST /api/repliz/sync, reuse
 // secret internal yang sudah ada — bukan CRON_SECRET terpisah).
 export async function GET(req: NextRequest) {
@@ -12,9 +14,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await runReplizSync()
-    console.log('[repliz-sync cron]', result)
-    return NextResponse.json(result)
+    const [content, insight] = await Promise.all([
+      runReplizSync(),
+      runReplizAccountInsightSync(),
+    ])
+    console.log('[repliz-sync cron]', { content, insight })
+    return NextResponse.json({ content, insight })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
   }

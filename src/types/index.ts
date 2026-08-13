@@ -20,6 +20,7 @@ export interface Brand {
   color: string
   logo_url: string | null
   status: 'active' | 'inactive'
+  repliz_ig_account_id: string | null
 }
 
 export type TaskStatus =

@@ -101,6 +101,15 @@ export async function getContentStatistic(contentId: string, accountId: string) 
   )
 }
 
+/**
+ * Statistik akun (agregat, bukan harian granular) — reach, likes, comments,
+ * saves, shares/reposts, profileLinksTaps, totalInteractions, views, dll.
+ * Field tersedia beda per platform.
+ */
+export async function getAccountStatistic(accountId: string) {
+  return replizFetch<Record<string, unknown>>(`/account/${accountId}/statistic`)
+}
+
 /** List konten published di Repliz */
 export async function getContents(page = 1, limit = 50) {
   return replizFetch<{ data?: Record<string, unknown>[]; [k: string]: unknown }>(

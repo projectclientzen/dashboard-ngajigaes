@@ -4,6 +4,18 @@ import type { Brand } from '@/types'
 
 type RawRow = Record<string, unknown>
 
+function mapBrand(b: RawRow): Brand {
+  return {
+    id: b.id as string,
+    name: b.name as string,
+    slug: b.slug as string,
+    color: (b.color as string | null) ?? '#7E997B',
+    logo_url: (b.logo_url as string | null) ?? null,
+    status: b.status as 'active' | 'inactive',
+    repliz_ig_account_id: (b.repliz_ig_account_id as string | null) ?? null,
+  }
+}
+
 export function useBrands() {
   return useQuery({
     queryKey: ['brands'],
@@ -17,14 +29,7 @@ export function useBrands() {
         .eq('status', 'active')
         .order('name') as { data: RawRow[] | null; error: unknown }
       if (error) throw error
-      return (data ?? []).map(b => ({
-        id: b.id as string,
-        name: b.name as string,
-        slug: b.slug as string,
-        color: (b.color as string | null) ?? '#7E997B',
-        logo_url: (b.logo_url as string | null) ?? null,
-        status: b.status as 'active' | 'inactive',
-      }))
+      return (data ?? []).map(mapBrand)
     },
     staleTime: 10 * 60 * 1000,
   })
@@ -43,14 +48,7 @@ export function useAllBrands() {
         .select('*')
         .order('name') as { data: RawRow[] | null; error: unknown }
       if (error) throw error
-      return (data ?? []).map(b => ({
-        id: b.id as string,
-        name: b.name as string,
-        slug: b.slug as string,
-        color: (b.color as string | null) ?? '#7E997B',
-        logo_url: (b.logo_url as string | null) ?? null,
-        status: b.status as 'active' | 'inactive',
-      }))
+      return (data ?? []).map(mapBrand)
     },
   })
 }
@@ -58,7 +56,7 @@ export function useAllBrands() {
 export function useCreateBrand() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: { name: string; slug: string; color?: string; logo_url?: string }) => {
+    mutationFn: async (payload: { name: string; slug: string; color?: string; logo_url?: string; repliz_ig_account_id?: string }) => {
       const { error } = await db().from('brands').insert(payload)
       if (error) throw error
     },
@@ -72,7 +70,7 @@ export function useCreateBrand() {
 export function useUpdateBrand() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...fields }: { id: string; name?: string; color?: string; logo_url?: string; status?: 'active' | 'inactive' }) => {
+    mutationFn: async ({ id, ...fields }: { id: string; name?: string; color?: string; logo_url?: string; status?: 'active' | 'inactive'; repliz_ig_account_id?: string | null }) => {
       const { error } = await db().from('brands').update(fields).eq('id', id)
       if (error) throw error
     },

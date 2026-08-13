@@ -440,7 +440,7 @@ function BrandsTab() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState<string | null>(null)
   const [slugTouched, setSlugTouched] = useState(false)
-  const [form, setForm] = useState({ name: '', slug: '', color: '#5E7A5C', logo_url: '', status: 'active' as 'active' | 'inactive' })
+  const [form, setForm] = useState({ name: '', slug: '', color: '#5E7A5C', logo_url: '', status: 'active' as 'active' | 'inactive', repliz_ig_account_id: '' })
   const [err, setErr] = useState('')
 
   const brands = brandsQ.data ?? []
@@ -448,7 +448,7 @@ function BrandsTab() {
   function openNew() {
     setEditing(null)
     setSlugTouched(false)
-    setForm({ name: '', slug: '', color: '#5E7A5C', logo_url: '', status: 'active' })
+    setForm({ name: '', slug: '', color: '#5E7A5C', logo_url: '', status: 'active', repliz_ig_account_id: '' })
     setErr('')
     setShowModal(true)
   }
@@ -456,7 +456,7 @@ function BrandsTab() {
   function openEdit(b: typeof brands[0]) {
     setEditing(b.id)
     setSlugTouched(true)
-    setForm({ name: b.name, slug: b.slug, color: b.color, logo_url: b.logo_url ?? '', status: b.status })
+    setForm({ name: b.name, slug: b.slug, color: b.color, logo_url: b.logo_url ?? '', status: b.status, repliz_ig_account_id: b.repliz_ig_account_id ?? '' })
     setErr('')
     setShowModal(true)
   }
@@ -473,9 +473,9 @@ function BrandsTab() {
 
     try {
       if (editing) {
-        await updateBrand.mutateAsync({ id: editing, name: form.name, color: form.color, logo_url: form.logo_url || undefined, status: form.status })
+        await updateBrand.mutateAsync({ id: editing, name: form.name, color: form.color, logo_url: form.logo_url || undefined, status: form.status, repliz_ig_account_id: form.repliz_ig_account_id || null })
       } else {
-        await createBrand.mutateAsync({ name: form.name, slug, color: form.color, logo_url: form.logo_url || undefined })
+        await createBrand.mutateAsync({ name: form.name, slug, color: form.color, logo_url: form.logo_url || undefined, repliz_ig_account_id: form.repliz_ig_account_id || undefined })
       }
       setShowModal(false)
     } catch (e) {
@@ -569,6 +569,10 @@ function BrandsTab() {
           <Field label="Logo URL (opsional)">
             <input className={inputCls} placeholder="https://..."
               value={form.logo_url} onChange={e => setForm(f => ({ ...f, logo_url: e.target.value }))}/>
+          </Field>
+          <Field label="Repliz IG Account ID (opsional, untuk auto-sync Instagram Insight)">
+            <input className={inputCls} placeholder="cth: 6a44aa5d20e4f4f195d873ba"
+              value={form.repliz_ig_account_id} onChange={e => setForm(f => ({ ...f, repliz_ig_account_id: e.target.value }))}/>
           </Field>
           {editing && (
             <Field label="Status">
