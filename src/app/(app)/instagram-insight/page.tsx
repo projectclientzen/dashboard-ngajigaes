@@ -20,12 +20,15 @@ function erColor(er: number) {
 }
 
 // ─── Badges ───────────────────────────────────────────────────
-function SourceBadge({ source }: { source: 'manual' | 'auto' }) {
-  return source === 'manual' ? (
-    <span className="text-[9.5px] font-semibold text-[#9A6E4A] bg-[#F3E7D8] border border-[#E6D3BE] rounded-[5px] px-[6px] py-[2px]">manual</span>
-  ) : (
-    <span className="text-[9.5px] font-semibold text-[#3C648F] bg-[#EAF0FA] border border-[#D4E1F0] rounded-[5px] px-[6px] py-[2px]">Auto Repliz</span>
-  )
+type DataSource = 'manual' | 'auto-ig' | 'auto-repliz'
+const SOURCE_META: Record<DataSource, { label: string; bg: string; c: string; border: string }> = {
+  manual:       { label: 'manual',   bg: '#F3E7D8', c: '#9A6E4A', border: '#E6D3BE' },
+  'auto-ig':    { label: 'Auto IG',  bg: '#EAF0FA', c: '#3C648F', border: '#D4E1F0' },
+  'auto-repliz':{ label: 'Auto Repliz', bg: '#E9F3EA', c: '#4E7A4C', border: '#D8E6D2' },
+}
+function SourceBadge({ source }: { source: DataSource }) {
+  const m = SOURCE_META[source]
+  return <span className="text-[9.5px] font-semibold rounded-[5px] px-[6px] py-[2px] border" style={{ background: m.bg, color: m.c, borderColor: m.border }}>{m.label}</span>
 }
 
 const FORMAT_BADGE: Record<string, { label: string; bg: string; c: string }> = {
@@ -45,7 +48,7 @@ function ThemeBadge({ theme }: { theme: string | null }) {
 
 // ─── KPI card ─────────────────────────────────────────────────
 function MetricCard({ label, value, sub, color, source, action }: {
-  label: string; value: string; sub?: string; color?: string; source?: 'manual' | 'auto'; action?: React.ReactNode
+  label: string; value: string; sub?: string; color?: string; source?: DataSource; action?: React.ReactNode
 }) {
   return (
     <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
@@ -284,9 +287,13 @@ export default function InstagramInsightPage() {
 
   const insights = insightsQ.data ?? []
   const latest = insights[insights.length - 1]
-  const prev = insights[insights.length - 2]
 
-  const growth = (latest?.followers ?? 0) - (prev?.followers ?? 0)
+  // Followers manual & sparse — bandingkan 2 titik data followers TERISI
+  // terakhir, bukan cuma baris sebelumnya (bisa null di antaranya).
+  const followerRows = insights.filter(i => i.followers != null)
+  const growth = followerRows.length >= 2
+    ? (followerRows[followerRows.length - 1].followers as number) - (followerRows[followerRows.length - 2].followers as number)
+    : null
   const avgReach = insights.length
     ? Math.round(insights.reduce((a, i) => a + (i.reach ?? 0), 0) / insights.length)
     : 0
@@ -394,15 +401,15 @@ export default function InstagramInsightPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <MetricCard label="Followers" value={latest?.followers != null ? formatNumber(latest.followers) : '—'}
-          sub={growth !== 0 ? `${growth > 0 ? '+' : ''}${growth} dari sebelumnya` : 'Belum ada perubahan'}
-          color={growth > 0 ? '#5E8C61' : growth < 0 ? '#B4452F' : undefined}
-          source="manual"
-          action={<button onClick={() => openForm()} className="text-[#9A9279] hover:text-[#5E7A5C] border-none bg-none cursor-pointer" title="Input followers">✎</button>}/>
+          sub={growth == null ? 'Belum ada perbandingan' : growth !== 0 ? `${growth > 0 ? '+' : ''}${formatNumber(growth)} dari sebelumnya` : 'Belum ada perubahan'}
+          color={growth != null && growth > 0 ? '#5E8C61' : growth != null && growth < 0 ? '#B4452F' : undefined}
+          source="auto-ig"
+          action={<button onClick={() => openForm()} className="text-[#9A9279] hover:text-[#5E7A5C] border-none bg-none cursor-pointer" title="Koreksi manual">✎</button>}/>
         <MetricCard label="Avg Reach" value={avgReach > 0 ? formatNumber(avgReach) : '—'}
-          sub={`${insights.length} hari data`} source="auto"/>
+          sub={`${insights.length} hari data`} source="auto-ig"/>
         <MetricCard label="Engagement Rate" value={avgEr != null ? `${avgEr.toFixed(2)}%` : '—'}
           sub="rata-rata periode ini"
-          color={avgEr != null ? erColor(avgEr / 100) : undefined} source="auto"/>
+          color={avgEr != null ? erColor(avgEr / 100) : undefined} source="auto-ig"/>
         <MetricCard label="DM Masuk" value={latest?.dm_count != null ? formatNumber(latest.dm_count) : '—'}
           sub="hari terakhir" source="manual"/>
       </div>
@@ -620,7 +627,7 @@ export default function InstagramInsightPage() {
           </div>
           <div className="flex-1">
             <div className="text-[13px] font-bold text-[#2B2A24]">Sumber data</div>
-            <div className="text-[11px] text-[#9A9279]">Auto-sync dari Repliz</div>
+            <div className="text-[11px] text-[#9A9279]">Auto-sync IG Graph API + Repliz</div>
           </div>
           <svg className={`sm:hidden flex-shrink-0 transition-transform ${sourceOpen ? 'rotate-180' : ''}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9A9279" strokeWidth="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
@@ -633,12 +640,25 @@ export default function InstagramInsightPage() {
                 : 'Belum pernah sync'}
             </span>
           </div>
-          <div className="text-[10px] font-semibold tracking-[.05em] text-[#9A9279] mb-2">BUTUH INPUT MANUAL</div>
+          <div className="text-[10px] font-semibold tracking-[.05em] text-[#9A9279] mb-2">OTOMATIS — IG Graph API</div>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-[6px] mb-4 text-[12px]">
+            {[
+              ['Reach', latest?.reach], ['Followers', latest?.followers],
+              ['Likes', latest?.total_likes], ['Comments', latest?.total_comments],
+              ['Saves', latest?.total_saves], ['Shares', latest?.total_shares],
+            ].map(([label, val]) => (
+              <div key={label as string} className="flex justify-between text-[#5A574C]">
+                <span>{label}</span>
+                <span className="font-semibold tabular-nums">{val != null ? formatNumber(val as number) : '—'}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-[10px] font-semibold tracking-[.05em] text-[#9A9279] mb-2">OTOMATIS — Repliz</div>
+          <div className="text-[12px] text-[#5A574C] mb-4">post_link &amp; status jadwal publish (lihat Content Calendar)</div>
+          <div className="text-[10px] font-semibold tracking-[.05em] text-[#9A9279] mb-2">BUTUH INPUT MANUAL — tidak tersedia di API manapun</div>
           <div className="flex flex-col gap-2 mb-3">
             {[
-              { key: 'followers', label: 'Followers', val: latest?.followers },
               { key: 'impressions', label: 'Impressions', val: latest?.impressions },
-              { key: 'profile_visits', label: 'Profile visits', val: latest?.profile_visits },
               { key: 'dm_count', label: 'DM masuk', val: latest?.dm_count },
             ].map(f => (
               <div key={f.key} className="flex items-center justify-between border-t border-[#F1ECDC] pt-2 first:border-t-0 first:pt-0">
@@ -653,7 +673,8 @@ export default function InstagramInsightPage() {
             ))}
           </div>
           <div className="text-[11px] text-[#A89F86] border-t border-[#F1ECDC] pt-2">
-            Kolom auto-sync diperbarui otomatis tiap pagi. Kolom manual diisi tim saat rekap harian.
+            Reach, followers, likes, comments, saves, shares, dan engagement rate diambil otomatis dari Instagram Graph API tiap hari.
+            Impressions &amp; DM masuk tidak disediakan API manapun (IG Graph API akun tipe Creator/Business tidak expose metrik ini) — diisi tim saat rekap harian.
           </div>
         </div>
       </div>
