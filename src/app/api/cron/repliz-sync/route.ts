@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runReplizSync } from '@/lib/server/replizSync'
 
-// POST — sync status schedule + engagement dari Repliz ke contents (manual trigger)
-// Untuk sync terjadwal otomatis, lihat GET /api/cron/repliz-sync.
-// Auth: Bearer PUSH_SEND_SECRET (reuse secret internal yang sudah ada)
-export async function POST(req: NextRequest) {
+// GET — dipanggil scheduler (Vercel Cron / VPS crontab / dll).
+// Auth: Bearer PUSH_SEND_SECRET (sama dengan POST /api/repliz/sync, reuse
+// secret internal yang sudah ada — bukan CRON_SECRET terpisah).
+export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization') ?? ''
   const secret = process.env.PUSH_SEND_SECRET
   if (secret && auth !== `Bearer ${secret}`) {
@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = await runReplizSync()
+    console.log('[repliz-sync cron]', result)
     return NextResponse.json(result)
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })

@@ -1,6 +1,7 @@
 {
   "crons": [
     { "path": "/api/cron/daily-reminder", "schedule": "0 2 * * *" },
-    { "path": "/api/cron/daily-reminder", "schedule": "0 9 * * *" }
+    { "path": "/api/cron/daily-reminder", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/repliz-sync", "schedule": "0 */6 * * *" }
   ]
 }
