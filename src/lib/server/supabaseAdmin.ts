@@ -4,12 +4,13 @@
  * JANGAN diimport dari komponen client atau file dengan 'use client'.
  */
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database.types'
 
 if (typeof window !== 'undefined') {
   throw new Error('supabaseAdmin hanya boleh diimport dari server-side code')
 }
 
-export const supabaseAdmin = createClient(
+export const supabaseAdmin = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {

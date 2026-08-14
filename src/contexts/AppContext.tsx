@@ -20,6 +20,12 @@ interface AppContextValue {
   isMember: boolean
   isLoading: boolean
   // Brand (CTX-1)
+  // KEAMANAN (audit K-3, 14 Agu 2026): brand switcher ini adalah FILTER
+  // TAMPILAN, bukan kontrol akses. RLS di database sengaja tidak menyaring
+  // per brand_id — semua anggota tim internal memang boleh melihat data
+  // semua brand (dikonfirmasi Maszen). Jangan anggap brandId === 'all' vs
+  // brand tertentu sebagai batas keamanan; siapa pun yang login tetap bisa
+  // query lintas brand langsung ke PostgREST kalau mau.
   brandId: string | 'all'
   setBrandId: (id: string | 'all') => void
   brand: Brand | null           // null saat mode 'all'

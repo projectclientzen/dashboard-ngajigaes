@@ -32,7 +32,7 @@ export function useScalevOrders(start: string, end: string, brandId?: string | '
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
       let q = sb
-        .from('scalev_orders')
+        .from('scalev_orders_safe')
         .select('*')
         .gte('order_date', start)
         .lte('order_date', end)

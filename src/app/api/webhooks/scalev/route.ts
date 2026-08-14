@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/server/supabaseAdmin'
 import { verifyScalevSignature } from '@/lib/server/scalevSignature'
+import type { Database, Json } from '@/types/database.types'
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
   // WH-9: Dedup — cek apakah unique_id sudah ada
   if (scalevUniqueId) {
     const { data: existing } = await supabaseAdmin
-      .from('scalev_webhook_events' as never)
+      .from('scalev_webhook_events')
       .select('id, processed_status')
       .eq('scalev_unique_id', scalevUniqueId)
       .maybeSingle()
@@ -112,8 +113,8 @@ export async function POST(req: NextRequest) {
     if (existing) {
       // Sudah ada → tandai ignored, return 200 (idempoten)
       await supabaseAdmin
-        .from('scalev_webhook_events' as never)
-        .update({ processed_status: 'ignored' } as never)
+        .from('scalev_webhook_events')
+        .update({ processed_status: 'ignored' })
         .eq('scalev_unique_id', scalevUniqueId)
 
       return NextResponse.json({ ok: true, status: 'ignored' })
@@ -122,14 +123,14 @@ export async function POST(req: NextRequest) {
 
   // WH-8: simpan raw payload status pending
   const { error: insertError } = await supabaseAdmin
-    .from('scalev_webhook_events' as never)
+    .from('scalev_webhook_events')
     .insert({
       scalev_unique_id: scalevUniqueId,
       event_type: eventType,
-      raw_payload: payload,
+      raw_payload: payload as Json,
       processed_status: 'pending',
       received_at: new Date().toISOString(),
-    } as never)
+    })
 
   if (insertError) {
     console.error('[scalev-webhook] Insert error:', insertError.message)
@@ -170,7 +171,7 @@ async function upsertOrderFromPayload(payload: Record<string, unknown>) {
   const orderDate = jakartaDate(rawDate ?? new Date().toISOString())
   const isSpam = data.is_probably_spam
 
-  const row: Record<string, unknown> = {
+  const row: Database['public']['Tables']['scalev_orders']['Insert'] = {
     order_id: orderId,
     order_date: orderDate,
     synced_at: new Date().toISOString(),
@@ -183,18 +184,18 @@ async function upsertOrderFromPayload(payload: Record<string, unknown>) {
 
   // brand_id: mapping via brands.scalev_store_id (business.unique_id di payload
   // Scalev — lihat migration 20260815_scalev_store_id.sql). Best-effort — kalau
-  // kolomnya belum ada/lookup gagal, order tetap ter-upsert tanpa brand_id
-  // (sama seperti perilaku sebelumnya), bukan gagal total.
+  // lookup gagal (brand belum di-map), order tetap ter-upsert tanpa brand_id
+  // daripada gagal total.
   const business = data.business as Record<string, unknown> | undefined
   const storeId = business?.unique_id as string | undefined
   if (storeId) {
     try {
       const { data: b } = await supabaseAdmin
-        .from('brands' as never)
+        .from('brands')
         .select('id')
-        .eq('scalev_store_id' as never, storeId)
+        .eq('scalev_store_id', storeId)
         .maybeSingle()
-      if (b) row.brand_id = (b as { id: string }).id
+      if (b) row.brand_id = b.id
       else console.error(`[scalev-webhook] tidak ada brand dengan scalev_store_id=${storeId}`)
     } catch (e) {
       console.error('[scalev-webhook] brand lookup error:', (e as Error).message)
@@ -203,8 +204,8 @@ async function upsertOrderFromPayload(payload: Record<string, unknown>) {
 
   try {
     await supabaseAdmin
-      .from('scalev_orders' as never)
-      .upsert(row as never, { onConflict: 'order_id' } as never)
+      .from('scalev_orders')
+      .upsert(row, { onConflict: 'order_id' })
     console.log(`[scalev-webhook] upsert order ${orderId} status=${status ?? 'unchanged'}`)
   } catch (e) {
     // Jangan block — polling backup tetap jalan

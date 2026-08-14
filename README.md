@@ -29,6 +29,23 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Database & Schema
+
+Supabase project: `adslab-ngajigaes` (ref `xnfnbfqtskgiutvhhjjo`).
+
+**Aturan wajib (sejak audit 15 Agu 2026, temuan K-1/P-7):** semua perubahan
+schema dan RLS policy **HARUS** lewat file migration di `supabase/migrations/`
+— review dulu, baru apply. **Dilarang** mengubah lewat Supabase SQL Editor
+langsung. Alasan: policy `anon` yang membocorkan `campaign_snapshots` (1.366
+baris data ads terbaca publik tanpa login) sempat masuk ke produksi lewat SQL
+Editor dan tidak pernah ter-review lewat PR — karena tidak ada jejaknya di
+repo, tidak ada yang bisa menangkapnya lebih awal.
+
+`supabase/migrations/20260815_baseline_schema.sql` adalah snapshot skema
+produksi (diambil via introspeksi SQL, bukan `supabase db dump`) — dokumentasi
+starting point, bukan untuk dijalankan ulang. Migration setelah tanggal itu
+adalah source of truth untuk perubahan schema.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
