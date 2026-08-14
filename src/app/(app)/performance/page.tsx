@@ -202,8 +202,8 @@ function OmzetTab({ brandId, isAllBrands, requireBrandId, rangeStart, rangeEnd, 
           <div className="text-[11px] text-[#A89F86] mb-2">{rangeLabel} · total {formatRupiah(omzetTotal, true)}</div>
           {isLoading ? (
             <div className="h-[190px] flex items-center justify-center text-[13px] text-[#9A9279]">Memuat...</div>
-          ) : dailyData.length < 2 ? (
-            <div className="h-[190px] flex items-center justify-center text-[13px] text-[#9A9279]">Belum cukup data harian di periode ini</div>
+          ) : dailyData.length < 1 ? (
+            <div className="h-[190px] flex items-center justify-center text-[13px] text-[#9A9279]">Belum ada data harian di periode ini</div>
           ) : (
             <div className="h-[190px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -449,8 +449,8 @@ function IklanTab({ brandId, rangeStart, rangeEnd, rangeLabel }: {
           <div className="text-[11px] text-[#A89F86] mb-2">{rangeLabel}</div>
           {isLoading ? (
             <div className="h-[190px] flex items-center justify-center text-[13px] text-[#9A9279]">Memuat...</div>
-          ) : chartData.length < 2 ? (
-            <div className="h-[190px] flex items-center justify-center text-[13px] text-[#9A9279]">Belum cukup data harian di periode ini</div>
+          ) : chartData.length < 1 ? (
+            <div className="h-[190px] flex items-center justify-center text-[13px] text-[#9A9279]">Belum ada data harian di periode ini</div>
           ) : (
             <div className="h-[190px]">
               <ResponsiveContainer width="100%" height="100%">
@@ -600,12 +600,16 @@ function PnlTab({ brandId, rangeStart, rangeEnd, rangeLabel }: {
   const isLoading = ordersQ.isLoading || spendQ.isLoading
 
   const completed = useMemo(() => orders.filter(o => o.status === 'completed'), [orders])
+  // revenueGross = gross_revenue mentah dari Scalev. revenueNet = setelah payment_fee/scalev_fee/
+  // service_fee dipotong Scalev (net_payment_revenue) — fallback ke gross kalau baris lama belum
+  // punya net_payment_revenue. Profit dihitung dari NET, bukan gross — fee itu beban riil.
   const revenue = completed.reduce((a, o) => a + (o.gross_revenue ?? 0), 0)
+  const revenueNet = completed.reduce((a, o) => a + (o.net_payment_revenue ?? o.gross_revenue ?? 0), 0)
+  const feeTotal = revenue - revenueNet
   const purchaseValue = spendRows.reduce((a, r) => a + r.purchase_value, 0)
   const spend = spendRows.reduce((a, r) => a + r.spend, 0)
-  const grossProfit = revenue - spend
-  const netProfit = grossProfit
-  const margin = revenue > 0 ? (netProfit / revenue) * 100 : 0
+  const netProfit = revenueNet - spend
+  const margin = revenueNet > 0 ? (netProfit / revenueNet) * 100 : 0
   const roas = spend > 0 ? purchaseValue / spend : 0
   const profitColor = netProfit >= 0 ? '#4C6A4A' : '#B4452F'
 
@@ -634,9 +638,9 @@ function PnlTab({ brandId, rangeStart, rangeEnd, rangeLabel }: {
           <div className="text-[11.5px] text-[#A89F86] mt-[6px]">Total biaya iklan</div>
         </div>
         <div className="rounded-lg p-4 text-[#F4EFDF]" style={{ background: netProfit >= 0 ? 'linear-gradient(135deg,#5E7A5C,#4C6A4A)' : 'linear-gradient(135deg,#B4452F,#8F3624)' }}>
-          <div className="text-[12px] font-medium mb-2 opacity-80">Net Profit</div>
+          <div className="text-[12px] font-medium mb-2 opacity-80">Profit setelah Ads &amp; Fee</div>
           <div className="text-[24px] font-bold tracking-tight">{formatRupiah(netProfit, true)}</div>
-          <div className="text-[12px] mt-[6px] opacity-80">Margin {margin.toFixed(1)}% · ROAS {roas.toFixed(2)}</div>
+          <div className="text-[12px] mt-[6px] opacity-80">Margin {margin.toFixed(1)}% · ROAS {roas.toFixed(2)} · blm HPP</div>
         </div>
       </div>
 
@@ -645,12 +649,16 @@ function PnlTab({ brandId, rangeStart, rangeEnd, rangeLabel }: {
           <div className="text-[13px] font-bold text-[#2B2A24] mb-2">Breakdown P&amp;L</div>
           <div className="flex flex-col">
             <PnlRow label="Est. Gross Revenue" value={formatRupiah(revenue)} />
+            <PnlRow label="Fee Scalev &amp; Payment" value={`− ${formatRupiah(feeTotal)}`} color="#C2795A" />
+            <PnlRow label="Revenue Bersih (Net)" value={formatRupiah(revenueNet)} />
             <PnlRow label="Ads Spent (Meta)" value={`− ${formatRupiah(spend)}`} color="#C2795A" />
-            <PnlRow label="Net Profit" value={formatRupiah(netProfit)} total color={profitColor} />
+            <PnlRow label="Profit setelah Ads & Fee" value={formatRupiah(netProfit)} total color={profitColor} />
             <PnlRow label="Margin bersih" value={`${margin.toFixed(1)}%`} muted />
             <PnlRow label="ROAS (blended)" value={roas.toFixed(2)} muted />
           </div>
-          <div className="text-[10.5px] text-[#A89F86] mt-2">COGS belum tersedia di data — Net Profit = Gross Profit.</div>
+          <div className="text-[10.5px] text-[#A89F86] mt-2">
+            Belum termasuk HPP produk — angka di atas adalah revenue bersih (setelah fee Scalev/payment) dikurangi biaya iklan, bukan profit akhir penuh.
+          </div>
         </div>
 
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-4">
@@ -664,8 +672,8 @@ function PnlTab({ brandId, rangeStart, rangeEnd, rangeLabel }: {
           <div className="text-[11px] text-[#A89F86] mb-2">{rangeLabel} · total {formatRupiah(revenue, true)}</div>
           {isLoading ? (
             <div className="h-[200px] flex items-center justify-center text-[13px] text-[#9A9279]">Memuat...</div>
-          ) : chartData.length < 2 ? (
-            <div className="h-[200px] flex items-center justify-center text-[13px] text-[#9A9279]">Belum cukup data harian di periode ini</div>
+          ) : chartData.length < 1 ? (
+            <div className="h-[200px] flex items-center justify-center text-[13px] text-[#9A9279]">Belum ada data harian di periode ini</div>
           ) : (
             <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">

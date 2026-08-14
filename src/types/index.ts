@@ -369,7 +369,6 @@ export interface ScalevOrder {
   id: string
   order_id: string
   scalev_id: string
-  customer_name: string | null
   status: string                    // 'completed' | 'pending' | ...
   gross_revenue: number | null
   net_payment_revenue: number | null

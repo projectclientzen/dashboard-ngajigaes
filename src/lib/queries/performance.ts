@@ -9,7 +9,6 @@ function mapScalevOrder(r: RawRow): ScalevOrder {
     id: r.id as string,
     order_id: r.order_id as string,
     scalev_id: r.scalev_id as string,
-    customer_name: (r.customer_name as string) ?? null,
     status: r.status as string,
     gross_revenue: (r.gross_revenue as number) ?? null,
     net_payment_revenue: (r.net_payment_revenue as number) ?? null,
