@@ -22,6 +22,7 @@ const IC = {
   calendar:  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>,
   instagram: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>,
   sales:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="13" y="8" width="3" height="10"/></svg>,
+  performance: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><path d="M17 5l2 2-4 4"/></svg>,
   review:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 14l2 2 4-4"/></svg>,
   extra:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M12 11v6M9 14h6"/></svg>,
   inbox:     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6"/><path d="M3 12l3-8h12l3 8"/><path d="M3 12h5a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2h5"/></svg>,
@@ -46,6 +47,7 @@ const LEADER_NAV = [
     { href: '/inbox',             label: 'Inbox',              icon: IC.inbox,     badge: true },
   ]},
   { label: 'BISNIS', items: [
+    { href: '/performance',       label: 'Performance',        icon: IC.performance, badge: false },
     { href: '/sales',             label: 'Omzet & Produk',     icon: IC.sales,     badge: false },
     { href: '/weekly-review',     label: 'Weekly Review',      icon: IC.review,    badge: false },
   ]},
@@ -66,6 +68,9 @@ const MEMBER_NAV = [
     { href: '/kpi',               label: 'KPI Saya',           icon: IC.kpi,       badge: false },
     { href: '/instagram-insight', label: 'Instagram Insight',  icon: IC.instagram, badge: false },
     { href: '/my-performance',    label: 'Performa Saya',      icon: IC.perf,      badge: false },
+  ]},
+  { label: 'BISNIS', items: [
+    { href: '/performance',       label: 'Performance',        icon: IC.performance, badge: false },
   ]},
 ]
 

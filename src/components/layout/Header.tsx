@@ -20,12 +20,13 @@ const PAGE_TITLES: Record<string, [string, string]> = {
   '/instagram-insight':   ['Instagram Insight',     'Performa akun & konten'],
   '/inbox':               ['Inbox',                 'Komentar & chat dari semua platform'],
   '/sales':               ['Omzet & Produk',        'Penjualan & produk'],
+  '/performance':         ['Performance Dashboard', 'Omzet Scalev · Performance Meta Ads · Report P&L'],
   '/weekly-review':       ['Weekly Review',         'Evaluasi mingguan'],
   '/settings':            ['Settings',              'Pengaturan tim & sistem'],
   '/extra-tasks':         ['Tugas Tambahan',        'Tugas langsung dari Leader'],
 }
 
-const PERIOD_PAGES = new Set(['/dashboard', '/sales', '/instagram-insight'])
+const PERIOD_PAGES = new Set(['/dashboard', '/sales', '/instagram-insight', '/performance'])
 
 const RANGE_OPTS: { id: DateRange; label: string }[] = [
   { id: 'today', label: 'Hari ini' },

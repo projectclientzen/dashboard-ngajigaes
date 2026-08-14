@@ -363,6 +363,88 @@ export interface ScoreSettings {
   initiative_weight: number
 }
 
+// ─── PERFORMANCE (Omzet Scalev + Meta Ads + P&L) ─────────────
+
+export interface ScalevOrder {
+  id: string
+  order_id: string
+  scalev_id: string
+  customer_name: string | null
+  status: string                    // 'completed' | 'pending' | ...
+  gross_revenue: number | null
+  net_payment_revenue: number | null
+  payment_fee: number | null
+  scalev_fee: number | null
+  service_fee: number | null
+  payment_method: string | null
+  order_date: string
+  is_spam: boolean
+  brand_id: string
+  synced_at: string | null
+}
+
+export interface ScalevProduct {
+  id: string
+  scalev_id: string
+  name: string
+  slug: string | null
+  price: number
+  stock: number | null
+  status: string
+  brand_id: string
+}
+
+// Manual entry dari halaman Performance ("+ Tambah Penjualan") — bebas teks,
+// terpisah dari sales_records/products yang dipakai /sales.
+export interface ManualSale {
+  id: string
+  sales_date: string
+  product_name: string
+  gross_revenue: number
+  qty: number
+  notes: string | null
+  brand_id: string
+  created_by: string | null
+  created_at: string
+}
+
+export interface MetaAdsDailySpend {
+  id: string
+  spend_date: string
+  spend: number
+  purchases: number
+  purchase_value: number
+  roas: number | null
+  leads: number
+  campaign_count: number
+  brand_id: string
+  synced_at: string | null
+}
+
+export interface CampaignSnapshot {
+  id: string
+  campaign_id: string
+  campaign_name: string
+  level: string
+  date_start: string
+  date_stop: string
+  spend: number | null
+  reach: number | null
+  impressions: number | null
+  clicks: number | null
+  ctr: number | null
+  cpm: number | null
+  purchases: number | null
+  purchase_value: number | null
+  leads: number | null
+  roas: number | null
+  cpl: number | null
+  cpp: number | null
+  status: string
+  fetched_at: string | null
+  brand_id: string
+}
+
 // ─── DB-LEVEL TYPES (internal, tidak untuk FE) ───────────────
 // Dipakai hanya di lib/supabase/ dan server actions.
 // FE tidak perlu import dari sini.

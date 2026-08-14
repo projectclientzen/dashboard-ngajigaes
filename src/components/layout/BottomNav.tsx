@@ -26,6 +26,7 @@ function DrawerIcon({ name, color }: { name: string; color: string }) {
     calendar: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>,
     insight:  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill={color}/></svg>,
     sales:    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="13" y="8" width="3" height="10"/></svg>,
+    performance: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><path d="M17 5l2 2-4 4"/></svg>,
     review:   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 14l2 2 4-4"/></svg>,
     settings: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L16 2H8l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 3 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1c.6.5 1.3.9 2 1.2L8 22h8l.5-2.6c.7-.3 1.4-.7 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>,
     extra:    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2"><path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><rect x="4" y="6" width="16" height="15" rx="2"/><path d="M12 11v6M9 14h6"/></svg>,
@@ -38,6 +39,7 @@ function DrawerIcon({ name, color }: { name: string; color: string }) {
 // ─── More drawer items per role ─────────────────────────────
 const LEADER_MORE = [
   { href: '/team-performance',  label: 'Team Performance', hint: 'Skor & ranking',    icon: 'team' },
+  { href: '/performance',       label: 'Performance',      hint: 'Omzet · Iklan · P&L', icon: 'performance' },
   { href: '/sales',             label: 'Omzet & Produk',   hint: 'Penjualan',          icon: 'sales' },
   { href: '/content-calendar',  label: 'Content Calendar', hint: 'Jadwal konten',      icon: 'calendar' },
   { href: '/instagram-insight', label: 'Instagram Insight',hint: 'Performa akun',      icon: 'insight' },
@@ -48,6 +50,7 @@ const LEADER_MORE = [
 
 const MEMBER_MORE = [
   { href: '/my-performance',    label: 'Performa Saya',    hint: 'Skor & posisi',      icon: 'perf' },
+  { href: '/performance',       label: 'Performance',      hint: 'Omzet · Iklan · P&L', icon: 'performance' },
   { href: '/content-calendar',  label: 'Konten Saya',      hint: 'Konten & jadwal',    icon: 'calendar' },
   { href: '/instagram-insight', label: 'Instagram Insight',hint: 'Performa akun',      icon: 'insight' },
   { href: '/extra-tasks',       label: 'Tugas Tambahan',   hint: 'Dari Leader',        icon: 'extra' },
