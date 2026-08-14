@@ -1,10 +1,6 @@
--- K-1 (bagian TULIS) — JANGAN APPLY sampai dikonfirmasi.
---
--- Cek dulu: apa yang menulis ke campaign_snapshots, ads_detail,
--- campaign_kpi_targets, alert_log, fetch_status (proses di luar repo ini —
--- n8n, Apps Script, cron server lain, dll)? Kalau proses itu pakai ANON KEY,
--- ganti ke SERVICE ROLE KEY dulu, baru migration ini boleh di-apply — kalau
--- tidak, sync akan berhenti diam-diam begitu policy INSERT/UPDATE anon dicabut.
+-- K-1 (bagian TULIS) — APPLIED. Dikonfirmasi Maszen: proses penulis
+-- campaign_snapshots/ads_detail/dll pakai service role key, bukan anon.
+-- Diterapkan + diverifikasi live: 0 grant tulis anon di seluruh schema public.
 
 DROP POLICY IF EXISTS anon_insert_ads_detail   ON public.ads_detail;
 DROP POLICY IF EXISTS anon_update_ads_detail   ON public.ads_detail;
