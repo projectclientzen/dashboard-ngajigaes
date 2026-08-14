@@ -150,9 +150,16 @@ export function currentWeekRange(): { start: string; end: string } {
  * Range bulan berjalan
  */
 export function currentMonthRange(): { start: string; end: string } {
-  const today = new Date(todayJakarta())
-  const start = new Date(today.getFullYear(), today.getMonth(), 1)
-  const end = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  return getMonthRange(todayJakarta())
+}
+
+/**
+ * Range bulan kalender dari tanggal manapun di bulan itu
+ */
+export function getMonthRange(dateStr: string): { start: string; end: string } {
+  const d = parseISO(dateStr)
+  const start = new Date(d.getFullYear(), d.getMonth(), 1)
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0)
   return {
     start: format(start, 'yyyy-MM-dd'),
     end: format(end, 'yyyy-MM-dd'),

@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useProductivityScores } from '@/lib/queries/productivity'
-import { getInitials } from '@/lib/utils'
+import { getInitials, getWeekRange, todayJakarta } from '@/lib/utils'
+import { PeriodNav, type PeriodNavRange } from '@/components/PeriodNav'
 
 const AVATAR_COLORS = ['#5E7A5C','#4F7CAC','#C2795A','#8A6BA8','#3F8C8C','#B07A3C']
 function avatarColor(name: string) {
@@ -20,9 +22,15 @@ function statusMeta(status: string) {
   return M[status] ?? M.critical
 }
 
+function defaultPeriod(): PeriodNavRange {
+  const r = getWeekRange(todayJakarta())
+  return { start: r.start, end: r.end, mode: 'week', label: '' }
+}
+
 export default function TeamPerformancePage() {
-  const { isLeader, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, brands } = useApp()
-  const scoresQ = useProductivityScores(rangeStart, rangeEnd, brandId)
+  const { isLeader, isLoading: authLoading, brandId, isAllBrands, brands } = useApp()
+  const [period, setPeriod] = useState<PeriodNavRange>(defaultPeriod)
+  const scoresQ = useProductivityScores(period.start, period.end, brandId)
 
   if (!isLeader) {
     return (
@@ -39,6 +47,7 @@ export default function TeamPerformancePage() {
 
   return (
     <div className="flex flex-col gap-[14px]">
+      <PeriodNav defaultMode="week" onChange={setPeriod} />
       {scores.length === 0 ? (
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 text-center text-[13px] text-[#A89F86]">
           Belum ada data productivity score untuk periode ini. Jalankan close_weekly_review untuk generate snapshot.

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useTasks, useTaskComments, useUpdateTaskStatus, useUpdateTask, useDeleteTask, useCreateTask, useAddComment } from '@/lib/queries/tasks'
 import { useAllUsers } from '@/lib/queries/daily-reports'
-import { cn, getInitials, formatDate } from '@/lib/utils'
+import { cn, getInitials, formatDate, toJakartaDate } from '@/lib/utils'
+import { PeriodNav, type PeriodNavRange } from '@/components/PeriodNav'
 import type { Task, TaskStatus, Priority } from '@/types'
 
 const KANBAN_COLS: { id: TaskStatus; label: string; color: string }[] = [
@@ -75,6 +76,7 @@ export default function TasksPage() {
   const [editErr, setEditErr] = useState('')
 
   const [view, setView]           = useState<'kanban' | 'table'>('kanban')
+  const [period, setPeriod]       = useState<PeriodNavRange | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragId, setDragId]       = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -167,19 +169,30 @@ export default function TasksPage() {
     setSelectedId(null)
   }
 
+  const tasks = useMemo(() => {
+    const all = tasksQ.data ?? []
+    if (!period) return all
+    return all.filter(t => {
+      const d = toJakartaDate(t.created_at)
+      return d >= period.start && d <= period.end
+    })
+  }, [tasksQ.data, period])
+
   if (authLoading || tasksQ.isLoading) {
     return <div className="grid grid-cols-4 gap-3">{[...Array(4)].map((_,i) => <Skeleton key={i}/>)}</div>
   }
 
-  const tasks = tasksQ.data ?? []
   const users = usersQ.data ?? []
 
   return (
     <div className="flex flex-col gap-[14px]">
-      <div className="flex justify-between items-center">
-        <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px]">
-          <button className={segBtn(view === 'kanban')} onClick={() => setView('kanban')}>Kanban</button>
-          <button className={segBtn(view === 'table')} onClick={() => setView('table')}>Tabel</button>
+      <div className="flex justify-between items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="inline-flex bg-[#EFEAD9] rounded-lg p-[3px] gap-[2px]">
+            <button className={segBtn(view === 'kanban')} onClick={() => setView('kanban')}>Kanban</button>
+            <button className={segBtn(view === 'table')} onClick={() => setView('table')}>Tabel</button>
+          </div>
+          <PeriodNav defaultMode="month" onChange={setPeriod} />
         </div>
         <button onClick={() => setShowCreate(true)} disabled={isAllBrands}
           title={isAllBrands ? 'Pilih brand dulu untuk membuat task' : undefined}
@@ -195,9 +208,13 @@ export default function TasksPage() {
 
       {tasks.length === 0 && (
         <div className="bg-white border border-[#EBE5D4] rounded-lg p-10 flex flex-col items-center gap-3 text-center">
-          <div className="text-[16px] font-bold text-[#2B2A24]">Belum ada task</div>
+          <div className="text-[16px] font-bold text-[#2B2A24]">
+            {(tasksQ.data?.length ?? 0) > 0 ? 'Tidak ada task dibuat di periode ini' : 'Belum ada task'}
+          </div>
           <div className="text-[13px] text-[#9A9279]">
-            Klik &quot;+ Buat Task&quot; untuk membuat task dan assign ke anggota tim.
+            {(tasksQ.data?.length ?? 0) > 0
+              ? <>Coba pindah ke minggu/bulan lain, atau klik &quot;+ Buat Task&quot; untuk membuat yang baru.</>
+              : <>Klik &quot;+ Buat Task&quot; untuk membuat task dan assign ke anggota tim.</>}
           </div>
         </div>
       )}

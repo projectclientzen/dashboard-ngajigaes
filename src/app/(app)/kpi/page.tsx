@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { useKpis, useAllKpiResults, useCreateKpi, useUpdateKpi, useDeleteKpi, useUpsertKpiResult } from '@/lib/queries/kpi'
 import { useAllUsers } from '@/lib/queries/daily-reports'
-import { getInitials, formatNumber, kpiPeriodBounds } from '@/lib/utils'
+import { getInitials, formatNumber, kpiPeriodBounds, getMonthRange, todayJakarta } from '@/lib/utils'
+import { PeriodNav, type PeriodNavRange } from '@/components/PeriodNav'
 import type { KpiPeriod, KpiCalculationMethod } from '@/types'
 
 const AVATAR_COLORS = ['#5E7A5C','#4F7CAC','#C2795A','#8A6BA8','#3F8C8C','#B07A3C']
@@ -25,9 +26,15 @@ const PERIOD_LABEL: Record<string, string> = { daily:'Harian', weekly:'Mingguan'
 const METHOD_LABEL: Record<string, string> = { manual:'Manual', task:'Task', content:'Konten', sales:'Penjualan', instagram:'Instagram' }
 const CATEGORIES = ['Produktivitas','Konten','Sales','Engagement','Reach','Lainnya']
 
+function defaultKpiPeriod(): PeriodNavRange {
+  const r = getMonthRange(todayJakarta())
+  return { start: r.start, end: r.end, mode: 'month', label: '' }
+}
+
 export default function KpiPage() {
-  const { userId, isLeader, rangeStart, rangeEnd, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
-  const allQ      = useAllKpiResults(rangeStart, rangeEnd, brandId)
+  const { userId, isLeader, isLoading: authLoading, brandId, isAllBrands, requireBrandId } = useApp()
+  const [period, setPeriod] = useState<PeriodNavRange>(defaultKpiPeriod)
+  const allQ      = useAllKpiResults(period.start, period.end, brandId)
   const kpisQ     = useKpis(brandId)
   const usersQ    = useAllUsers()
   const createKpi  = useCreateKpi()
@@ -191,6 +198,8 @@ export default function KpiPage() {
 
       {/* Results tab */}
       {tab === 'results' && (
+        <>
+        <PeriodNav defaultMode="month" onChange={setPeriod} />
         <div className="bg-white border border-[#EBE5D4] rounded-lg overflow-hidden">
           {rows.length === 0 ? (
             <div className="p-10 text-center text-[13px] text-[#A89F86]">
@@ -249,6 +258,7 @@ export default function KpiPage() {
             </table>
           )}
         </div>
+        </>
       )}
 
       {/* Definitions tab */}
