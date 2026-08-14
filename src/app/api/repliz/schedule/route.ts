@@ -16,7 +16,7 @@ const FORMAT_TO_TYPE: Record<string, ReplizPostType> = {
 }
 
 // POST — jadwalkan konten dashboard ke Repliz
-// Body: { content_id: string, account_id: string, media_urls?: string[] }
+// Body: { content_id, account_id, media_urls?: string[], music?: string, schedule_at?: string }
 export async function POST(req: NextRequest) {
   const cookieStore = cookies()
   const supabase = createServerClient(
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     content_id: string
     account_id: string
     media_urls?: string[]
+    music?: string
+    schedule_at?: string // ISO 8601, opsional — override waktu jadwal
   }
   if (!body.content_id || !body.account_id) {
     return NextResponse.json({ error: 'content_id dan account_id wajib' }, { status: 400 })
@@ -46,27 +48,44 @@ export async function POST(req: NextRequest) {
   if (cErr || !content) {
     return NextResponse.json({ error: 'Konten tidak ditemukan' }, { status: 404 })
   }
-  if (!content.publish_date) {
+
+  // Tolak kalau sudah terjadwal — jangan timpa schedule yang ada
+  if (content.repliz_schedule_id) {
+    return NextResponse.json({ error: 'Konten ini sudah terjadwal di Repliz.' }, { status: 409 })
+  }
+
+  if (!content.publish_date && !body.schedule_at) {
     return NextResponse.json({ error: 'Konten belum punya tanggal publish' }, { status: 400 })
   }
 
   const type = FORMAT_TO_TYPE[content.format as string] ?? 'image'
 
-  // Media: dari body.media_urls atau fallback asset_link
+  // Media: dari body.media_urls (multi, urutan sesuai input) atau fallback asset_link
   const urls = (body.media_urls?.length ? body.media_urls : [content.asset_link]).filter(Boolean) as string[]
   if (urls.length === 0 && type !== 'text') {
-    return NextResponse.json({ error: 'Butuh minimal satu media URL (isi Link Asset atau media_urls)' }, { status: 400 })
+    return NextResponse.json({ error: 'Butuh minimal satu media URL (isi Link Asset atau upload gambar)' }, { status: 400 })
   }
   const medias: ReplizMedia[] = urls.map(url => ({
     type: type === 'video' || type === 'reel' ? 'video' : 'image',
     url,
   }))
 
-  // scheduleAt: publish_date jam 10.00 WIB default (03.00 UTC) jika tanpa jam
-  const dateOnly = (content.publish_date as string).split('T')[0]
-  const scheduleAt = content.publish_date.includes('T')
-    ? new Date(content.publish_date).toISOString()
-    : `${dateOnly}T03:00:00.000Z`
+  // scheduleAt: pakai override client (tanggal+jam WIB dari UI) kalau ada,
+  // fallback ke publish_date jam 10.00 WIB default.
+  let scheduleAt: string
+  if (body.schedule_at) {
+    scheduleAt = new Date(body.schedule_at).toISOString()
+  } else {
+    const dateOnly = (content.publish_date as string).split('T')[0]
+    scheduleAt = content.publish_date.includes('T')
+      ? new Date(content.publish_date).toISOString()
+      : `${dateOnly}T03:00:00.000Z`
+  }
+
+  // Tolak kalau tanggal jadwal sudah lewat
+  if (new Date(scheduleAt).getTime() < Date.now()) {
+    return NextResponse.json({ error: 'Tanggal/jam jadwal sudah lewat — pilih waktu di masa depan.' }, { status: 400 })
+  }
 
   try {
     const result = await createSchedule({
@@ -76,16 +95,22 @@ export async function POST(req: NextRequest) {
       medias,
       accountId: body.account_id,
       scheduleAt,
+      ...(body.music?.trim() ? {
+        additionalInfo: { music: { id: '', name: body.music.trim(), artist: '', thumbnail: '' } },
+      } : {}),
     })
 
-    // Simpan schedule id ke contents via service role (bypass RLS untuk kolom sync)
+    // Repliz balikin { scheduleId }. Jaga fallback ke bentuk lama (id/_id)
+    // buat kompatibilitas kalau ada versi API yang beda.
     const scheduleId =
+      (result.scheduleId as string) ??
       (result.id as string) ??
       (result._id as string) ??
       ((result.data as Record<string, unknown> | undefined)?.id as string) ??
       ((result.data as Record<string, unknown> | undefined)?._id as string) ??
       null
 
+    // Simpan schedule id ke contents via service role (bypass RLS untuk kolom sync)
     const admin = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!

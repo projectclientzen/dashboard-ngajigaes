@@ -85,16 +85,49 @@ export default function ContentCalendarPage() {
   const scheduleRepliz  = useScheduleToRepliz()
   const [replizAccountId, setReplizAccountId] = useState('')
   const [replizMsg, setReplizMsg] = useState('')
+  const [replizMediaUrls, setReplizMediaUrls] = useState<string[]>([])
+  const [replizMusic, setReplizMusic] = useState('')
+  const [replizTime, setReplizTime] = useState('10:00')
+
+  function replizScheduleAtISO(): string | null {
+    if (!form.publish_date) return null
+    const dt = new Date(`${form.publish_date}T${replizTime || '10:00'}:00+07:00`)
+    return isNaN(dt.getTime()) ? null : dt.toISOString()
+  }
 
   async function handleScheduleRepliz() {
     if (!selected || !replizAccountId) { setReplizMsg('Pilih akun tujuan dulu.'); return }
+    const scheduleAt = replizScheduleAtISO()
+    if (!scheduleAt) { setReplizMsg('Isi Tanggal Publish dulu.'); return }
+    if (new Date(scheduleAt).getTime() < Date.now()) { setReplizMsg('Tanggal/jam jadwal sudah lewat.'); return }
     setReplizMsg('')
     try {
-      await scheduleRepliz.mutateAsync({ content_id: selected.id, account_id: replizAccountId })
+      await scheduleRepliz.mutateAsync({
+        content_id: selected.id,
+        account_id: replizAccountId,
+        media_urls: replizMediaUrls.map(u => u.trim()).filter(Boolean),
+        ...(replizMusic.trim() && { music: replizMusic.trim() }),
+        schedule_at: scheduleAt,
+      })
       setReplizMsg('✓ Terjadwal di Repliz')
     } catch (e) {
       setReplizMsg(`Gagal: ${(e as Error).message}`)
     }
+  }
+
+  function addReplizMedia() { setReplizMediaUrls(u => [...u, '']) }
+  function removeReplizMedia(i: number) { setReplizMediaUrls(u => u.filter((_, idx) => idx !== i)) }
+  function moveReplizMedia(i: number, dir: -1 | 1) {
+    setReplizMediaUrls(u => {
+      const j = i + dir
+      if (j < 0 || j >= u.length) return u
+      const next = [...u]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }
+  function updateReplizMedia(i: number, value: string) {
+    setReplizMediaUrls(u => u.map((v, idx) => idx === i ? value : v))
   }
 
   const [form, setForm] = useState({
@@ -117,7 +150,7 @@ export default function ContentCalendarPage() {
     // Non-leader: PIC default ke diri sendiri
     setForm({ title: '', format: 'feed_single', objective: 'awareness', status: 'idea', pic_id: isLeader ? '' : (userId ?? ''), theme: '', publish_date: '', caption: '', hook: '', cta: '', asset_link: '' })
     setErr('')
-    setReplizMsg(''); setReplizAccountId('')
+    setReplizMsg(''); setReplizAccountId(''); setReplizMediaUrls([]); setReplizMusic(''); setReplizTime('10:00')
     setShowDrawer(true)
   }
 
@@ -130,6 +163,8 @@ export default function ContentCalendarPage() {
     })
     setErr('')
     setReplizMsg(''); setReplizAccountId('')
+    setReplizMediaUrls(c.asset_link ? [c.asset_link] : [])
+    setReplizMusic(''); setReplizTime('10:00')
     setShowDrawer(true)
   }
 
@@ -436,8 +471,57 @@ export default function ContentCalendarPage() {
                           <option key={a.id} value={a.id}>{a.platform ? `[${a.platform}] ` : ''}{a.name}</option>
                         ))}
                       </select>
+
+                      {/* Media (multi untuk carousel) */}
+                      <div className="flex flex-col gap-[6px]">
+                        <label className="text-[11px] font-semibold text-[#5A574C]">
+                          Media{form.format === 'carousel' ? ' (urutan carousel)' : ''}
+                        </label>
+                        {replizMediaUrls.length === 0 && (
+                          <div className="text-[11px] text-[#A89F86]">Belum ada media — tambah URL gambar/video.</div>
+                        )}
+                        {replizMediaUrls.map((url, i) => (
+                          <div key={i} className="flex items-center gap-[6px]">
+                            {url && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={url} alt="" className="w-8 h-8 rounded object-cover border border-[#E3DCC8] shrink-0"
+                                onError={e => { (e.target as HTMLImageElement).style.visibility = 'hidden' }}/>
+                            )}
+                            <input className={`${inputCls} py-[6px]`} placeholder="https://..."
+                              value={url} onChange={e => updateReplizMedia(i, e.target.value)}/>
+                            <button type="button" onClick={() => moveReplizMedia(i, -1)} disabled={i === 0}
+                              className="text-[12px] text-[#5A574C] border-none bg-none cursor-pointer disabled:opacity-30 px-[2px]">↑</button>
+                            <button type="button" onClick={() => moveReplizMedia(i, 1)} disabled={i === replizMediaUrls.length - 1}
+                              className="text-[12px] text-[#5A574C] border-none bg-none cursor-pointer disabled:opacity-30 px-[2px]">↓</button>
+                            <button type="button" onClick={() => removeReplizMedia(i)}
+                              className="text-[12px] text-[#B4452F] border-none bg-none cursor-pointer px-[2px]">✕</button>
+                          </div>
+                        ))}
+                        <button type="button" onClick={addReplizMedia}
+                          className="self-start text-[11px] font-semibold text-[#4F7CAC] border-none bg-none cursor-pointer">
+                          + Tambah media
+                        </button>
+                      </div>
+
+                      {form.format === 'reels' && (
+                        <Field label="Link/nama musik (opsional)">
+                          <input className={inputCls} placeholder="Judul lagu atau link audio..."
+                            value={replizMusic} onChange={e => setReplizMusic(e.target.value)}/>
+                        </Field>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-[6px]">
+                        <Field label="Jam publish (WIB)">
+                          <input className={inputCls} type="time"
+                            value={replizTime} onChange={e => setReplizTime(e.target.value)}/>
+                        </Field>
+                        <div className="flex items-end text-[11px] text-[#A89F86] pb-[9px]">
+                          {form.publish_date ? `${formatDate(form.publish_date, 'd MMM yyyy')} · ${replizTime} WIB` : 'Isi Tanggal Publish di atas dulu'}
+                        </div>
+                      </div>
+
                       <button onClick={handleScheduleRepliz}
-                        disabled={scheduleRepliz.isPending || !replizAccountId}
+                        disabled={scheduleRepliz.isPending || !replizAccountId || !form.publish_date}
                         className="bg-[#4F7CAC] text-white border-none rounded-md py-[9px] text-[12px] font-semibold cursor-pointer hover:bg-[#3F6A9A] disabled:opacity-50 transition-colors">
                         {scheduleRepliz.isPending ? 'Menjadwalkan...' : '📅 Jadwalkan ke Sosmed'}
                       </button>

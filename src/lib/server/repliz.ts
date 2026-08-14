@@ -62,6 +62,7 @@ export interface CreateSchedulePayload {
     isDraft?: boolean
     collaborators?: string[]
     tags?: string[]
+    music?: { id: string; artist: string; name: string; thumbnail: string }
   }
 }
 

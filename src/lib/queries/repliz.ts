@@ -32,7 +32,7 @@ export function useReplizAccounts() {
 export function useScheduleToRepliz() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (payload: { content_id: string; account_id: string; media_urls?: string[] }) => {
+    mutationFn: async (payload: { content_id: string; account_id: string; media_urls?: string[]; music?: string; schedule_at?: string }) => {
       const res = await fetch('/api/repliz/schedule', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
